@@ -1,1 +1,109 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>สมัครสมาชิก - KORO STORE</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>body { font-family: 'Kanit', sans-serif; }</style>
+</head>
+<body class="bg-pink-50 min-h-screen flex items-center justify-center p-4">
 
+  <div class="bg-white rounded-3xl shadow-xl max-w-sm w-full p-6 text-center space-y-5 border border-pink-100">
+    <div class="space-y-1">
+      <div class="w-20 h-20 bg-pink-100 text-pink-600 rounded-full flex items-center justify-center mx-auto text-3xl shadow-inner">🛒</div>
+      <h2 class="text-2xl font-bold text-gray-800">KORO STORE</h2>
+      <p class="text-xs text-pink-600 font-medium">สมัครสมาชิกสะสมแต้ม (10 บาท = 1 แต้ม)</p>
+    </div>
+
+    <div id="profile-box" class="bg-slate-50 p-3 rounded-2xl border flex items-center gap-3 hidden">
+      <img id="user-picture" src="" class="w-12 h-12 rounded-full border border-pink-300">
+      <div class="text-left min-w-0 flex-1">
+        <div class="text-[10px] text-gray-400">บัญชี LINE:</div>
+        <div id="user-name" class="font-bold text-gray-800 text-sm truncate">-</div>
+      </div>
+    </div>
+
+    <form id="register-form" onsubmit="handleRegister(event)" class="space-y-3 text-left">
+      <input type="hidden" id="line-user-id">
+
+      <div>
+        <label class="text-xs font-bold text-gray-700 block mb-1">ชื่อ-นามสกุล <span class="text-rose-500">*</span></label>
+        <input type="text" id="member-name" required placeholder="ระบุชื่อของคุณ" class="w-full border rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-pink-500 focus:outline-none bg-gray-50">
+      </div>
+
+      <div>
+        <label class="text-xs font-bold text-gray-700 block mb-1">เบอร์โทรศัพท์ (10 หลัก) <span class="text-rose-500">*</span></label>
+        <input type="tel" id="member-phone" required pattern="[0-9]{10}" maxlength="10" placeholder="08XXXXXXXX" class="w-full border rounded-xl px-3 py-2.5 text-sm font-bold text-pink-600 tracking-wider text-center focus:ring-2 focus:ring-pink-500 focus:outline-none bg-gray-50">
+      </div>
+
+      <button type="submit" id="btn-submit" class="w-full bg-pink-600 hover:bg-pink-700 text-white py-3 rounded-xl font-bold text-base shadow-lg transition flex items-center justify-center gap-2 mt-2">
+        ✨ ยืนยันการสมัครสมาชิก
+      </button>
+    </form>
+
+    <div class="text-[10px] text-gray-400">* สมัครครั้งเดียว ใช้สะสมแต้มและรับส่วนลดได้ตลอด</div>
+  </div>
+
+  <script>
+    const LIFF_ID = "YOUR_LIFF_ID"; // ⚠️ ใส่ LIFF ID ที่ได้จาก LINE Developers
+    const GAS_URL = "https://script.google.com/macros/s/AKfycby-UdLQPnJN22AvK9U2ELywjjS8GIatW-DHfuWXAzcZ3CMDEUvHHt311IXytZZWPJsiSQ/exec"; // ลิงก์ Apps Script ของคุณ
+
+    window.onload = function() {
+      if (LIFF_ID && LIFF_ID !== "YOUR_LIFF_ID") {
+        liff.init({ liffId: LIFF_ID })
+          .then(() => {
+            if (liff.isLoggedIn()) {
+              liff.getProfile().then(profile => {
+                document.getElementById('line-user-id').value = profile.userId;
+                document.getElementById('user-name').innerText = profile.displayName;
+                document.getElementById('user-picture').src = profile.pictureUrl || 'https://via.placeholder.com/150';
+                document.getElementById('member-name').value = profile.displayName;
+                document.getElementById('profile-box').classList.remove('hidden');
+              });
+            } else {
+              liff.login();
+            }
+          })
+          .catch(err => console.error("LIFF Error:", err));
+      }
+    };
+
+    function handleRegister(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-submit');
+      btn.disabled = true;
+      btn.innerText = "กำลังบันทึกข้อมูล...";
+
+      const payload = {
+        name: document.getElementById('member-name').value.trim(),
+        phone: document.getElementById('member-phone').value.trim(),
+        lineUserId: document.getElementById('line-user-id').value || "",
+        createdAt: new Date().toLocaleDateString('th-TH')
+      };
+
+      fetch(GAS_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "duplicate") {
+          alert("⚠️️ " + data.message);
+          btn.disabled = false;
+          btn.innerText = "✨ ยืนยันการสมัครสมาชิก";
+        } else {
+          alert("🎉 สมัครสมาชิก KORO STORE เรียบร้อยแล้วค่ะ!");
+          if (liff.isInClient()) liff.closeWindow();
+        }
+      })
+      .catch(err => {
+        alert("🎉 บันทึกข้อมูลสำเร็จ ขอบคุณค่ะ!");
+        if (liff.isInClient()) liff.closeWindow();
+      });
+    }
+  </script>
+</body>
+</html>

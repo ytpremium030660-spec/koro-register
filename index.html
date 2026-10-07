@@ -51,57 +51,64 @@
 
   <script>
   const LIFF_ID = "2011897462-WxM66h4q"; 
-  const LIFF_URL = `https://liff.line.me/${LIFF_ID}`;
   const GAS_URL = "https://script.google.com/macros/s/AKfycbyeOCQDGNWyKkxc4rCCneX_EIAE1ik5OTKXoQEkb1YKT7u7cH2XPx6-ib7CoReru-c37Q/exec"; 
 
   window.onload = function() {
-  if (LIFF_ID && LIFF_ID !== "YOUR_LIFF_ID") {
-    liff.init({ liffId: LIFF_ID })
-      .then(() => {
-        if (liff.isLoggedIn()) {
-          liff.getFriendship().then(data => {
-            if (!data.friendFlag) {
-              // แสดง SweetAlert แจ้งเตือนลูกค้า
-              Swal.fire({
-                title: 'กรุณาเพิ่มเพื่อนก่อนนะคะ',
-                text: 'เพื่อรับสิทธิประโยชน์และสะสมแต้ม กรุณากดเพิ่มเพื่อนกับ KORO STORE ก่อนค่ะ',
-                icon: 'info',
-                confirmButtonText: '✨ กดเพิ่มเพื่อนที่นี่',
-                confirmButtonColor: '#db2777',
-                allowOutsideClick: false
-              }).then((result) => {
-                if (result.isConfirmed) {
-                  // เปิดหน้าแอดเพื่อนแบบ External
-                  liff.openWindow({
-                    url: "https://line.me/R/ti/p/@544kqfse",
-                    external: true
-                  });
-                  
-                  // รอผู้ใช้กลับมาแล้วให้รีเฟรชตรวจเช็กสถานะเพื่อนใหม่
-                  setTimeout(() => {
-                    location.reload();
-                  }, 1000);
-                }
-              });
-              return;
+    if (LIFF_ID && LIFF_ID !== "YOUR_LIFF_ID") {
+      liff.init({ liffId: LIFF_ID })
+        .then(() => {
+          if (liff.isLoggedIn()) {
+            checkFriendshipAndLoadProfile();
+          } else {
+            liff.login();
+          }
+        })
+        .catch(err => console.error("LIFF Error:", err));
+    }
+  };
+
+  async function checkFriendshipAndLoadProfile() {
+    try {
+      // 1. ตรวจสอบสถานะการเป็นเพื่อน
+      const data = await liff.getFriendship();
+      
+      if (!data.friendFlag) {
+        // 2. ถ้ายังไม่เป็นเพื่อน ให้ขึ้นป๊อปอัป SweetAlert แจ้งเตือน
+        Swal.fire({
+          title: 'กรุณาเพิ่มเพื่อนก่อนนะคะ',
+          text: 'เพื่อรับสิทธิประโยชน์และสะสมแต้ม กรุณากดเพิ่มเพื่อนกับ KORO STORE ก่อนค่ะ',
+          icon: 'info',
+          confirmButtonText: '✨ กดเพิ่มเพื่อนที่นี่',
+          confirmButtonColor: '#db2777',
+          allowOutsideClick: false
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            // 3. เรียกใช้ Popup เพิ่มเพื่อนแบบ Native ของ LINE โดยตรง (ไม่หลุดออกจากหน้า LIFF)
+            if (liff.isApiAvailable('requestFriendship')) {
+              await liff.requestFriendship();
+              // พอกดเพิ่มเพื่อนเสร็จ โหลดข้อมูลใหม่
+              checkFriendshipAndLoadProfile();
+            } else {
+              // กรณีเปิดบนเบราว์เซอร์ภายนอก
+              window.location.href = "https://line.me/R/ti/p/@544kqfse";
             }
-            
-            // เมื่อเป็นเพื่อนเรียบร้อย โหลดข้อมูลเข้าฟอร์ม
-            liff.getProfile().then(profile => {
-              document.getElementById('line-user-id').value = profile.userId;
-              document.getElementById('user-name').innerText = profile.displayName;
-              document.getElementById('user-picture').src = profile.pictureUrl || 'https://via.placeholder.com/150';
-              document.getElementById('member-name').value = profile.displayName;
-              document.getElementById('profile-box').classList.remove('hidden');
-            });
-          });
-        } else {
-          liff.login();
-        }
-      })
-      .catch(err => console.error("LIFF Error:", err));
+          }
+        });
+        return;
+      }
+
+      // 4. ถ้าเป็นเพื่อนเรียบร้อยแล้ว ดึงข้อมูลโปรไฟล์มาแสดงในฟอร์ม
+      const profile = await liff.getProfile();
+      document.getElementById('line-user-id').value = profile.userId;
+      document.getElementById('user-name').innerText = profile.displayName;
+      document.getElementById('user-picture').src = profile.pictureUrl || 'https://via.placeholder.com/150';
+      document.getElementById('member-name').value = profile.displayName;
+      document.getElementById('profile-box').classList.remove('hidden');
+
+    } catch (err) {
+      console.error("Error loading profile:", err);
+    }
   }
-};
 
   async function handleRegister(e) {
     e.preventDefault();

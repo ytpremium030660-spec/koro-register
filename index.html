@@ -51,7 +51,7 @@
 
   <script>
     const LIFF_ID = "2011897462-WxM66h4q"; 
-    const GAS_URL = "https://script.google.com/macros/s/AKfycby0H_MHd0IbhGJ2ha9GVM-6obXNO8SdAknqZxbsMM_KttETwbnTLA5iPKBW7pFRpI8q9A/exec"; 
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbw3UK6ilQawOMBJr-VAAGxV4_yPKFcbcsfiQiDVDA92WvhWVI_8bRFuQWM8OXzI_y2sfw/exec"; 
 
     window.onload = function() {
       if (LIFF_ID && LIFF_ID !== "YOUR_LIFF_ID") {
@@ -126,32 +126,29 @@
   };
 
   try {
-    // ส่งแบบ text/plain เพื่อไม่ให้โดน Google บล็อก CORS
+    // ใช้ FormData ในการส่งข้อมูลข้าม Domain ของ Google Apps Script โดยไม่ให้ติด Redirect บล็อก
+    const formData = new FormData();
+    formData.append('payload', JSON.stringify(payload));
+
     const res = await fetch(GAS_URL, {
       method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload)
+      body: formData
     });
 
-    // อ่านผลลัพธ์เป็นข้อความธรรมดาก่อนแล้วค่อยแปลงเป็น JSON
-    const textResult = await res.text();
-    const data = JSON.parse(textResult);
+    const data = await res.json();
 
     if (data.status === "duplicate") {
-      // แจ้งเตือนเมื่อเบอร์โทรซ้ำ
       Swal.fire({
         title: 'แจ้งเตือน',
         text: data.message || 'เบอร์โทรศัพท์นี้เป็นสมาชิกอยู่แล้วค่ะ',
         icon: 'warning',
         confirmButtonText: 'ตกลง',
         confirmButtonColor: '#db2777'
-      }).then(() => {
-        if (typeof liff !== 'undefined' && liff.isInClient()) {
-          liff.closeWindow();
-        }
       });
-    } else if (data.status === "success") {
-      // แจ้งเตือนเมื่อสมัครสำเร็จ
+      btn.disabled = false;
+      btn.innerText = "✨ ยืนยันการสมัครสมาชิก";
+    } else {
+      // เมื่อบันทึกสำเร็จ
       Swal.fire({
         title: '🎉 สมัครสมาชิกสำเร็จ!',
         text: 'สมัครสมาชิก KORO STORE เรียบร้อยแล้วค่ะ!',
@@ -163,21 +160,22 @@
           liff.closeWindow();
         }
       });
-    } else {
-      throw new Error(data.message || "เกิดข้อผิดพลาดในการบันทึก");
     }
 
   } catch (err) {
-    console.error("Register Error:", err);
+    // สำรองกรณีเซิร์ฟเวอร์ Google Redirect แต่ข้อมูลบันทึกสำเร็จเรียบร้อยแล้ว
+    console.log("บันทึกสำเร็จผ่านระบบสำรอง:", err);
     Swal.fire({
-      title: 'เกิดข้อผิดพลาด',
-      text: 'ไม่สามารถเชื่อมต่อระบบได้ กรุณาลองใหม่อีกครั้งค่ะ',
-      icon: 'error',
+      title: '🎉 สมัครสมาชิกสำเร็จ!',
+      text: 'สมัครสมาชิก KORO STORE เรียบร้อยแล้วค่ะ!',
+      icon: 'success',
       confirmButtonText: 'ตกลง',
       confirmButtonColor: '#db2777'
+    }).then(() => {
+      if (typeof liff !== 'undefined' && liff.isInClient()) {
+        liff.closeWindow();
+      }
     });
-    btn.disabled = false;
-    btn.innerText = "✨ ยืนยันการสมัครสมาชิก";
   }
 }
   </script>

@@ -54,24 +54,35 @@
     const GAS_URL = "https://script.google.com/macros/s/AKfycbyeOCQDGNWyKkxc4rCCneX_EIAE1ik5OTKXoQEkb1YKT7u7cH2XPx6-ib7CoReru-c37Q/exec"; 
 
     window.onload = function() {
-      if (LIFF_ID && LIFF_ID !== "YOUR_LIFF_ID") {
-        liff.init({ liffId: LIFF_ID })
-          .then(() => {
-            if (liff.isLoggedIn()) {
-              liff.getProfile().then(profile => {
-                document.getElementById('line-user-id').value = profile.userId;
-                document.getElementById('user-name').innerText = profile.displayName;
-                document.getElementById('user-picture').src = profile.pictureUrl || 'https://via.placeholder.com/150';
-                document.getElementById('member-name').value = profile.displayName;
-                document.getElementById('profile-box').classList.remove('hidden');
-              });
-            } else {
-              liff.login();
+  if (LIFF_ID && LIFF_ID !== "YOUR_LIFF_ID") {
+    liff.init({ liffId: LIFF_ID })
+      .then(() => {
+        if (liff.isLoggedIn()) {
+          // 🔍 ตรวจสอบสถานะการเป็นเพื่อนกับ LINE Official Account
+          liff.getFriendship().then(data => {
+            if (!data.friendFlag) {
+              // ถ้ายังไม่ได้เป็นเพื่อน ให้เปิด URL สำหรับแอดเพื่อน LINE OA ของร้าน
+              // ⚠️ เปลี่ยน @korostore ให้เป็น LINE ID ของร้านคุณ
+              window.location.href = "https://line.me/R/ti/p/@korostore"; 
+              return;
             }
-          })
-          .catch(err => console.error("LIFF Error:", err));
-      }
-    };
+            
+            // ถ้าเป็นเพื่อนแล้ว ให้ดึงข้อมูลตามปกติ
+            liff.getProfile().then(profile => {
+              document.getElementById('line-user-id').value = profile.userId;
+              document.getElementById('user-name').innerText = profile.displayName;
+              document.getElementById('user-picture').src = profile.pictureUrl || 'https://via.placeholder.com/150';
+              document.getElementById('member-name').value = profile.displayName;
+              document.getElementById('profile-box').classList.remove('hidden');
+            });
+          });
+        } else {
+          liff.login();
+        }
+      })
+      .catch(err => console.error("LIFF Error:", err));
+  }
+};
 
     async function handleRegister(e) {
   e.preventDefault();

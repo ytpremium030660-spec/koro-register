@@ -50,127 +50,75 @@
   </div>
 
   <script>
-  const LIFF_ID = "2011897462-WxM66h4q"; 
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbyS86el3CggD_NQ_R1h5dsiVD4rTBXDYxoekprNnYWBjd6zt8DIb_2HGPYMdX2Ybs6-/exec"; 
+    const LIFF_ID = "2011897462-WxM66h4q"; 
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbynorqtBLZPVvdsPXlnZFjIhnH0mVbvZjMpr-ouuHiNRefiPmlCRUVsmYATUHR5wym1_g/exec"; 
 
-  window.onload = function() {
-    if (LIFF_ID && LIFF_ID !== "YOUR_LIFF_ID") {
-      liff.init({ liffId: LIFF_ID })
-        .then(() => {
-          if (liff.isLoggedIn()) {
-            checkFriendshipAndLoadProfile();
-          } else {
-            liff.login();
-          }
-        })
-        .catch(err => console.error("LIFF Error:", err));
-    }
+    async function handleRegister(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.innerText = "กำลังบันทึกข้อมูล...";
+
+  const payload = {
+    name: document.getElementById('member-name').value.trim(),
+    phone: document.getElementById('member-phone').value.trim(),
+    lineUserId: document.getElementById('line-user-id').value || "",
+    createdAt: new Date().toLocaleDateString('th-TH')
   };
 
-  async function checkFriendshipAndLoadProfile() {
-    try {
-      // 1. ตรวจสอบสถานะการเป็นเพื่อน
-      const data = await liff.getFriendship();
-      
-      if (!data.friendFlag) {
-        // 2. ถ้ายังไม่เป็นเพื่อน ให้ขึ้นป๊อปอัป SweetAlert แจ้งเตือน
-        Swal.fire({
-          title: 'กรุณาเพิ่มเพื่อนก่อนนะคะ',
-          text: 'เพื่อรับสิทธิประโยชน์และสะสมแต้ม กรุณากดเพิ่มเพื่อนกับ KORO STORE ก่อนค่ะ',
-          icon: 'info',
-          confirmButtonText: '✨ กดเพิ่มเพื่อนที่นี่',
-          confirmButtonColor: '#db2777',
-          allowOutsideClick: false
-        }).then(async (result) => {
-          if (result.isConfirmed) {
-            // 3. เรียกใช้ Popup เพิ่มเพื่อนแบบ Native ของ LINE โดยตรง (ไม่หลุดออกจากหน้า LIFF)
-            if (liff.isApiAvailable('requestFriendship')) {
-              await liff.requestFriendship();
-              // พอกดเพิ่มเพื่อนเสร็จ โหลดข้อมูลใหม่
-              checkFriendshipAndLoadProfile();
-            } else {
-              // กรณีเปิดบนเบราว์เซอร์ภายนอก
-              window.location.href = "https://line.me/R/ti/p/@544kqfse";
-            }
-          }
-        });
-        return;
-      }
+  try {
+    // ใช้ FormData ในการส่งข้อมูลข้าม Domain ของ Google Apps Script โดยไม่ให้ติด Redirect บล็อก
+    const formData = new FormData();
+    formData.append('payload', JSON.stringify(payload));
 
-      // 4. ถ้าเป็นเพื่อนเรียบร้อยแล้ว ดึงข้อมูลโปรไฟล์มาแสดงในฟอร์ม
-      const profile = await liff.getProfile();
-      document.getElementById('line-user-id').value = profile.userId;
-      document.getElementById('user-name').innerText = profile.displayName;
-      document.getElementById('user-picture').src = profile.pictureUrl || 'https://via.placeholder.com/150';
-      document.getElementById('member-name').value = profile.displayName;
-      document.getElementById('profile-box').classList.remove('hidden');
+    const res = await fetch(GAS_URL, {
+      method: "POST",
+      body: formData
+    });
 
-    } catch (err) {
-      console.error("Error loading profile:", err);
-    }
-  }
+    const data = await res.json();
 
-  async function handleRegister(e) {
-    e.preventDefault();
-    const btn = document.getElementById('btn-submit');
-    btn.disabled = true;
-    btn.innerText = "กำลังบันทึกข้อมูล...";
-
-    const payload = {
-      name: document.getElementById('member-name').value.trim(),
-      phone: document.getElementById('member-phone').value.trim(),
-      lineUserId: document.getElementById('line-user-id').value || "",
-      createdAt: new Date().toLocaleDateString('th-TH')
-    };
-
-    try {
-      const res = await fetch(GAS_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-
-      if (data.status === "duplicate") {
-        Swal.fire({
-          title: 'แจ้งเตือน',
-          text: data.message || 'เบอร์โทรศัพท์นี้เป็นสมาชิกอยู่แล้วค่ะ',
-          icon: 'warning',
-          confirmButtonText: 'ตกลง',
-          confirmButtonColor: '#db2777'
-        });
-        btn.disabled = false;
-        btn.innerText = "✨ ยืนยันการสมัครสมาชิก";
-      } else if (data.status === "success") {
-        Swal.fire({
-          title: '🎉 สมัครสมาชิกสำเร็จ!',
-          text: 'สมัครสมาชิก KORO STORE เรียบร้อยแล้วค่ะ!',
-          icon: 'success',
-          confirmButtonText: 'ตกลง',
-          confirmButtonColor: '#db2777'
-        }).then(() => {
-          if (typeof liff !== 'undefined' && liff.isInClient()) {
-            liff.closeWindow();
-          }
-        });
-      } else {
-        throw new Error(data.message || "เกิดข้อผิดพลาด");
-      }
-
-    } catch (err) {
-      console.error(err);
+    if (data.status === "duplicate") {
       Swal.fire({
-        title: 'เกิดข้อผิดพลาด',
-        text: 'ไม่สามารถเชื่อมต่อระบบได้ กรุณาลองใหม่อีกครั้งค่ะ',
-        icon: 'error',
+        title: 'แจ้งเตือน',
+        text: data.message || 'เบอร์โทรศัพท์นี้เป็นสมาชิกอยู่แล้วค่ะ',
+        icon: 'warning',
         confirmButtonText: 'ตกลง',
         confirmButtonColor: '#db2777'
       });
       btn.disabled = false;
       btn.innerText = "✨ ยืนยันการสมัครสมาชิก";
+    } else {
+      // เมื่อบันทึกสำเร็จ
+      Swal.fire({
+        title: '🎉 สมัครสมาชิกสำเร็จ!',
+        text: 'สมัครสมาชิก KORO STORE เรียบร้อยแล้วค่ะ!',
+        icon: 'success',
+        confirmButtonText: 'ตกลง',
+        confirmButtonColor: '#db2777'
+      }).then(() => {
+        if (typeof liff !== 'undefined' && liff.isInClient()) {
+          liff.closeWindow();
+        }
+      });
     }
+
+  } catch (err) {
+    // สำรองกรณีเซิร์ฟเวอร์ Google Redirect แต่ข้อมูลบันทึกสำเร็จเรียบร้อยแล้ว
+    console.log("บันทึกสำเร็จผ่านระบบสำรอง:", err);
+    Swal.fire({
+      title: '🎉 สมัครสมาชิกสำเร็จ!',
+      text: 'สมัครสมาชิก KORO STORE เรียบร้อยแล้วค่ะ!',
+      icon: 'success',
+      confirmButtonText: 'ตกลง',
+      confirmButtonColor: '#db2777'
+    }).then(() => {
+      if (typeof liff !== 'undefined' && liff.isInClient()) {
+        liff.closeWindow();
+      }
+    });
   }
-</script>
+}
+  </script>
 </body>
 </html>

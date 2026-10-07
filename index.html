@@ -51,7 +51,7 @@
 
   <script>
     const LIFF_ID = "2011897462-WxM66h4q"; 
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbxwpAuO2aQ2Uox4VOTXigXeYwZYL_RV_S493Z_zlW_9OtkfrMH0uTGbZYQxYUef_fDrwQ/exec"; 
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbyeOCQDGNWyKkxc4rCCneX_EIAE1ik5OTKXoQEkb1YKT7u7cH2XPx6-ib7CoReru-c37Q/exec"; 
 
     window.onload = function() {
       if (LIFF_ID && LIFF_ID !== "YOUR_LIFF_ID") {
@@ -74,66 +74,69 @@
     };
 
     async function handleRegister(e) {
-      e.preventDefault();
-      const btn = document.getElementById('btn-submit');
-      btn.disabled = true;
-      btn.innerText = "กำลังบันทึกข้อมูล...";
+  e.preventDefault();
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.innerText = "กำลังบันทึกข้อมูล...";
 
-      const payload = {
-        name: document.getElementById('member-name').value.trim(),
-        phone: document.getElementById('member-phone').value.trim(),
-        lineUserId: document.getElementById('line-user-id').value || "",
-        createdAt: new Date().toLocaleDateString('th-TH')
-      };
+  const payload = {
+    name: document.getElementById('member-name').value.trim(),
+    phone: document.getElementById('member-phone').value.trim(),
+    lineUserId: document.getElementById('line-user-id').value || "",
+    createdAt: new Date().toLocaleDateString('th-TH')
+  };
 
-      try {
-        const res = await fetch(GAS_URL, {
-          method: "POST",
-          body: JSON.stringify(payload)
-        });
-        
-        const data = await res.json();
+  try {
+    // ส่งข้อมูลในรูปแบบ Content-Type: text/plain เพื่อป้องกัน CORS preflight ติดบล็อก
+    const res = await fetch(GAS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    });
 
-        if (data.status === "duplicate") {
-          // แจ้งเตือนเมื่อเบอร์โทรซ้ำด้วย SweetAlert2
-          Swal.fire({
-            title: 'แจ้งเตือน',
-            text: data.message || 'เบอร์โทรศัพท์นี้เป็นสมาชิกอยู่แล้วค่ะ',
-            icon: 'warning',
-            confirmButtonText: 'ตกลง',
-            confirmButtonColor: '#db2777'
-          });
-          btn.disabled = false;
-          btn.innerText = "✨ ยืนยันการสมัครสมาชิก";
-        } else {
-          // แจ้งเตือนเมื่อสมัครสำเร็จด้วย SweetAlert2 สวยๆ และรอให้ผู้ใช้กด "ตกลง" ก่อนปิดหน้าต่าง LIFF
-          Swal.fire({
-            title: '🎉 สมัครสมาชิกสำเร็จ!',
-            text: 'สมัครสมาชิก KORO STORE เรียบร้อยแล้วค่ะ!',
-            icon: 'success',
-            confirmButtonText: 'ตกลง',
-            confirmButtonColor: '#db2777'
-          }).then(() => {
-            if (typeof liff !== 'undefined' && liff.isInClient()) {
-              liff.closeWindow();
-            }
-          });
+    const data = await res.json();
+
+    if (data.status === "duplicate") {
+      // กรณีเบอร์โทรซ้ำ
+      Swal.fire({
+        title: 'แจ้งเตือน',
+        text: data.message || 'เบอร์โทรศัพท์นี้เป็นสมาชิกอยู่แล้วค่ะ',
+        icon: 'warning',
+        confirmButtonText: 'ตกลง',
+        confirmButtonColor: '#db2777'
+      });
+      btn.disabled = false;
+      btn.innerText = "✨ ยืนยันการสมัครสมาชิก";
+    } else if (data.status === "success") {
+      // กรณีสมัครสำเร็จ
+      Swal.fire({
+        title: '🎉 สมัครสมาชิกสำเร็จ!',
+        text: 'สมัครสมาชิก KORO STORE เรียบร้อยแล้วค่ะ!',
+        icon: 'success',
+        confirmButtonText: 'ตกลง',
+        confirmButtonColor: '#db2777'
+      }).then(() => {
+        if (typeof liff !== 'undefined' && liff.isInClient()) {
+          liff.closeWindow();
         }
-      } catch (err) {
-        // กรณีเชื่อมต่อเรียบร้อย/สำรอง
-        Swal.fire({
-          title: '🎉 สมัครสมาชิกสำเร็จ!',
-          text: 'ขอบคุณที่สมัครสมาชิก KORO STORE ค่ะ!',
-          icon: 'success',
-          confirmButtonText: 'ตกลง',
-          confirmButtonColor: '#db2777'
-        }).then(() => {
-          if (typeof liff !== 'undefined' && liff.isInClient()) {
-            liff.closeWindow();
-          }
-        });
-      }
+      });
+    } else {
+      throw new Error(data.message || "เกิดข้อผิดพลาด");
     }
+
+  } catch (err) {
+    console.error(err);
+    Swal.fire({
+      title: 'เกิดข้อผิดพลาด',
+      text: 'ไม่สามารถเชื่อมต่อระบบได้ กรุณาลองใหม่อีกครั้งค่ะ',
+      icon: 'error',
+      confirmButtonText: 'ตกลง',
+      confirmButtonColor: '#db2777'
+    });
+    btn.disabled = false;
+    btn.innerText = "✨ ยืนยันการสมัครสมาชิก";
+  }
+}
   </script>
 </body>
 </html>

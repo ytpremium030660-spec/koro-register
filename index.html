@@ -158,18 +158,7 @@
         throw new Error(data.message || "เกิดข้อผิดพลาด");
       }
 
-    } catch (err) {
-      console.error(err);
-      Swal.fire({
-        title: 'เกิดข้อผิดพลาด',
-        text: 'ไม่สามารถเชื่อมต่อระบบได้ กรุณาลองใหม่อีกครั้งค่ะ',
-        icon: 'error',
-        confirmButtonText: 'ตกลง',
-        confirmButtonColor: '#db2777'
-      });
-      btn.disabled = false;
-      btn.innerText = "✨ ยืนยันการสมัครสมาชิก";
-    }
+    } 
   }
 </script>
 </body>

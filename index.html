@@ -6,7 +6,6 @@
   <title>สมัครสมาชิก - KORO STORE</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <!-- SweetAlert2 -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>body { font-family: 'Kanit', sans-serif; }</style>
@@ -20,7 +19,6 @@
       <p class="text-xs text-pink-600 font-medium">สมัครสมาชิกสะสมแต้ม (10 บาท = 1 แต้ม)</p>
     </div>
 
-    <!-- บล็อกแสดงข้อมูลโปรไฟล์ LINE -->
     <div id="profile-box" class="bg-slate-50 p-3 rounded-2xl border flex items-center gap-3 hidden">
       <img id="user-picture" src="" class="w-12 h-12 rounded-full border border-pink-300">
       <div class="text-left min-w-0 flex-1">
@@ -52,26 +50,23 @@
 
   <script>
     const LIFF_ID = "2011897462-WxM66h4q"; 
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbzD4FrrQxWXU0OEVoQOYr7pdhPG2YcyRkTzJSZCAEp0tTcfj2RdgV8y618CW-kvmMumeA/exec"; 
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbyyxzvC9SkDgn_L7qIO_xR1H_SGtggUHWEbAEq2VEEzr4NnNlKlQPV8OwazOT1c1bRFkA/exec"; // ⚠️ ใส่ WebApp URL ของคุณที่นี่
 
-    // ดึงโปรไฟล์จาก LINE เมื่อเปิดหน้าเว็บ
     window.onload = function() {
       if (typeof liff !== 'undefined' && LIFF_ID) {
-        liff.init({ liffId: LIFF_ID })
-          .then(() => {
-            if (liff.isLoggedIn()) {
-              liff.getProfile().then(profile => {
-                document.getElementById('line-user-id').value = profile.userId;
-                document.getElementById('user-name').innerText = profile.displayName;
-                document.getElementById('user-picture').src = profile.pictureUrl || 'https://via.placeholder.com/150';
-                document.getElementById('member-name').value = profile.displayName;
-                document.getElementById('profile-box').classList.remove('hidden');
-              });
-            } else {
-              liff.login();
-            }
-          })
-          .catch(err => console.error("LIFF Init Error:", err));
+        liff.init({ liffId: LIFF_ID }).then(() => {
+          if (liff.isLoggedIn()) {
+            liff.getProfile().then(profile => {
+              document.getElementById('line-user-id').value = profile.userId;
+              document.getElementById('user-name').innerText = profile.displayName;
+              document.getElementById('user-picture').src = profile.pictureUrl || 'https://via.placeholder.com/150';
+              document.getElementById('member-name').value = profile.displayName;
+              document.getElementById('profile-box').classList.remove('hidden');
+            });
+          } else {
+            liff.login();
+          }
+        }).catch(err => console.error("LIFF Init Error:", err));
       }
     };
 
@@ -92,50 +87,20 @@
         const formData = new FormData();
         formData.append('payload', JSON.stringify(payload));
 
-        const res = await fetch(GAS_URL, {
-          method: "POST",
-          body: formData
-        });
-
+        const res = await fetch(GAS_URL, { method: "POST", body: formData });
         const data = await res.json();
 
         if (data.status === "duplicate") {
-          Swal.fire({
-            title: 'แจ้งเตือน',
-            text: data.message || 'เบอร์โทรศัพท์หรือบัญชี LINE นี้เป็นสมาชิกอยู่แล้วค่ะ',
-            icon: 'warning',
-            confirmButtonText: 'ตกลง',
-            confirmButtonColor: '#db2777'
-          });
+          Swal.fire({ title: 'แจ้งเตือน', text: data.message || 'เป็นสมาชิกอยู่แล้วค่ะ', icon: 'warning', confirmButtonColor: '#db2777' });
           btn.disabled = false;
           btn.innerText = "✨ ยืนยันการสมัครสมาชิก";
         } else {
-          Swal.fire({
-            title: '🎉 สมัครสมาชิกสำเร็จ!',
-            text: 'สมัครสมาชิก KORO STORE เรียบร้อยแล้วค่ะ!',
-            icon: 'success',
-            confirmButtonText: 'ตกลง',
-            confirmButtonColor: '#db2777'
-          }).then(() => {
-            if (typeof liff !== 'undefined' && liff.isInClient()) {
-              liff.closeWindow();
-            }
-          });
+          Swal.fire({ title: '🎉 สมัครสมาชิกสำเร็จ!', text: 'ขอบคุณที่สมัครสมาชิก KORO STORE ค่ะ!', icon: 'success', confirmButtonColor: '#db2777' })
+            .then(() => { if (typeof liff !== 'undefined' && liff.isInClient()) liff.closeWindow(); });
         }
-
       } catch (err) {
-        console.log("บันทึกผ่านการส่งข้อมูล:", err);
-        Swal.fire({
-          title: '🎉 สมัครสมาชิกสำเร็จ!',
-          text: 'สมัครสมาชิก KORO STORE เรียบร้อยแล้วค่ะ!',
-          icon: 'success',
-          confirmButtonText: 'ตกลง',
-          confirmButtonColor: '#db2777'
-        }).then(() => {
-          if (typeof liff !== 'undefined' && liff.isInClient()) {
-            liff.closeWindow();
-          }
-        });
+        Swal.fire({ title: '🎉 สมัครสมาชิกสำเร็จ!', text: 'ขอบคุณที่สมัครสมาชิก KORO STORE ค่ะ!', icon: 'success', confirmButtonColor: '#db2777' })
+          .then(() => { if (typeof liff !== 'undefined' && liff.isInClient()) liff.closeWindow(); });
       }
     }
   </script>

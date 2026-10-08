@@ -58,7 +58,7 @@
           <div class="text-[11px] text-pink-100 font-medium">⭐ แต้มสะสมคงเหลือ</div>
           <div class="text-2xl font-black tracking-tight"><span id="user-points">0</span> <span class="text-sm font-normal">แต้ม</span></div>
         </div>
-        <button onclick="fetchPoints()" class="bg-white/20 hover:bg-white/30 text-white text-xs font-semibold px-3 py-1.5 rounded-lg border border-white/30 backdrop-blur-sm transition">
+        <button onclick="fetchCustomerPoints(userLineId)" class="bg-white/20 hover:bg-white/30 text-white text-xs font-semibold px-3 py-1.5 rounded-lg border border-white/30 backdrop-blur-sm transition">
           🔄 อัปเดต
         </button>
       </div>
@@ -71,61 +71,11 @@
       </h3>
     </div>
 
-    <!-- Rewards List Container -->
+    <!-- Rewards List Container (ดึงข้อมูลอัตโนมัติจาก Google Sheets) -->
     <div id="rewards-container" class="space-y-3 max-h-[360px] overflow-y-auto pr-1">
       <div class="text-center py-8 text-gray-400 text-sm">
         <i class="fa-solid fa-spinner fa-spin text-pink-500 text-2xl mb-2"></i><br>กำลังโหลดรายการคูปอง...
       </div>
-    </div>
-      
-      <!-- Reward Item 1 -->
-      <div class="bg-white border border-pink-100 rounded-2xl p-3.5 flex items-center justify-between shadow-sm hover:border-pink-300 transition">
-        <div class="flex items-center gap-3">
-          <div class="w-12 h-12 bg-pink-100 text-pink-600 rounded-xl flex items-center justify-center text-xl font-black shadow-inner">
-            ฿20
-          </div>
-          <div class="text-left">
-            <div class="font-bold text-gray-800 text-sm">ส่วนลด 20 บาท</div>
-            <div class="text-xs text-rose-500 font-bold">ใช้ 20 แต้ม</div>
-          </div>
-        </div>
-        <button onclick="confirmRedeem('ส่วนลด 20 บาท', 20)" class="bg-pink-500 hover:bg-pink-600 active:scale-95 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-md shadow-pink-500/20 transition">
-          แลกคูปอง
-        </button>
-      </div>
-
-      <!-- Reward Item 2 -->
-      <div class="bg-white border border-pink-100 rounded-2xl p-3.5 flex items-center justify-between shadow-sm hover:border-pink-300 transition">
-        <div class="flex items-center gap-3">
-          <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center text-xl font-black shadow-inner">
-            ฿50
-          </div>
-          <div class="text-left">
-            <div class="font-bold text-gray-800 text-sm">ส่วนลด 50 บาท</div>
-            <div class="text-xs text-rose-500 font-bold">ใช้ 50 แต้ม</div>
-          </div>
-        </div>
-        <button onclick="confirmRedeem('ส่วนลด 50 บาท', 50)" class="bg-pink-500 hover:bg-pink-600 active:scale-95 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-md shadow-pink-500/20 transition">
-          แลกคูปอง
-        </button>
-      </div>
-
-      <!-- Reward Item 3 -->
-      <div class="bg-white border border-pink-100 rounded-2xl p-3.5 flex items-center justify-between shadow-sm hover:border-pink-300 transition">
-        <div class="flex items-center gap-3">
-          <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center text-xl font-black shadow-inner">
-            ฿100
-          </div>
-          <div class="text-left">
-            <div class="font-bold text-gray-800 text-sm">ส่วนลด 100 บาท</div>
-            <div class="text-xs text-rose-500 font-bold">ใช้ 100 แต้ม</div>
-          </div>
-        </div>
-        <button onclick="confirmRedeem('ส่วนลด 100 บาท', 100)" class="bg-pink-500 hover:bg-pink-600 active:scale-95 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-md shadow-pink-500/20 transition">
-          แลกคูปอง
-        </button>
-      </div>
-
     </div>
 
     <!-- Footer Note -->
@@ -137,56 +87,56 @@
 
   <script>
     // ⚠️ 1. ใส่ LIFF ID สำหรับหน้าคูปองที่คุณสร้างใน LINE Developers
-const REDEEM_LIFF_ID = "2011897462-5PQAqbot"; 
+    const REDEEM_LIFF_ID = "2011897462-5PQAqbot"; 
 
-// ⚠️ 2. ใส่ Web App URL ของ Google Apps Script
-const GAS_URL = "https://script.google.com/macros/s/AKfycbx_LAA7lU4Iu1ZdThoInxTWul3jvZTFjj3B1WeKDRxT_zugyd6KK2XmAWXdhdEd0mxc3g/exec"; 
+    // ⚠️ 2. ใส่ Web App URL ของ Google Apps Script
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbx_LAA7lU4Iu1ZdThoInxTWul3jvZTFjj3B1WeKDRxT_zugyd6KK2XmAWXdhdEd0mxc3g/exec"; 
 
-let userLineId = "";
-let currentPoints = 0;
+    let userLineId = "";
+    let currentPoints = 0;
 
-window.onload = function() {
-  if (typeof liff !== 'undefined' && REDEEM_LIFF_ID) {
-    liff.init({ liffId: REDEEM_LIFF_ID }).then(() => {
-      if (liff.isLoggedIn()) {
-        // ดึงข้อมูล Profile จาก LINE
-        liff.getProfile().then(profile => {
-          userLineId = profile.userId;
-          
-          // นำชื่อและรูปโปรไฟล์มาแสดงบนการ์ด
-          document.getElementById('user-name').innerText = profile.displayName;
-          document.getElementById('user-picture').src = profile.pictureUrl || 'https://via.placeholder.com/150';
-          
-          // 🚀 เรียกฟังก์ชันไปอ่านแต้มจาก Google Sheet
-          fetchCustomerPoints(userLineId);
-        });
-      } else {
-        liff.login();
+    window.onload = function() {
+      if (typeof liff !== 'undefined' && REDEEM_LIFF_ID) {
+        liff.init({ liffId: REDEEM_LIFF_ID }).then(() => {
+          if (liff.isLoggedIn()) {
+            liff.getProfile().then(profile => {
+              userLineId = profile.userId;
+              
+              document.getElementById('user-name').innerText = profile.displayName;
+              document.getElementById('user-picture').src = profile.pictureUrl || 'https://via.placeholder.com/150';
+              
+              // ดึงแต้มของลูกค้า
+              fetchCustomerPoints(userLineId);
+            });
+          } else {
+            liff.login();
+          }
+        }).catch(err => console.error("LIFF Init Error:", err));
       }
-    }).catch(err => console.error("LIFF Init Error:", err));
-  }
-};
+      
+      // โหลดรายการของรางวัลจาก Google Sheets
+      loadRewards();
+    };
 
-// ฟังก์ชันดึงคะแนนของลูกค้าตาม lineUserId
-async function fetchCustomerPoints(userId) {
-  try {
-    // ส่ง Request แบบ GET ไปยัง GAS
-    const response = await fetch(`${GAS_URL}?action=getPoints&lineUserId=${userId}`);
-    const result = await response.json();
+    // ฟังก์ชันดึงคะแนนของลูกค้าตาม lineUserId
+    async function fetchCustomerPoints(userId) {
+      if (!userId) return;
+      try {
+        const response = await fetch(`${GAS_URL}?action=getPoints&lineUserId=${userId}`);
+        const result = await response.json();
 
-    if (result.status === 'success') {
-      currentPoints = result.points;
-      // อัปเดตคะแนนลงในหน้าเว็บ
-      document.getElementById('user-points').innerText = currentPoints;
-    } else {
-      console.error("ไม่สามารถดึงข้อมูลแต้มได้:", result.message);
+        if (result.status === 'success') {
+          currentPoints = result.points;
+          document.getElementById('user-points').innerText = currentPoints;
+        } else {
+          console.error("ไม่สามารถดึงข้อมูลแต้มได้:", result.message);
+        }
+      } catch (err) {
+        console.error("Fetch Points Error:", err);
+      }
     }
-  } catch (err) {
-    console.error("Fetch Points Error:", err);
-  }
-}
 
-    // ดึงรายการของรางวัลจาก Google Sheets
+    // ฟังก์ชันดึงรายการของรางวัลจาก Google Sheets (แท็บ Rewards)
     async function loadRewards() {
       const container = document.getElementById('rewards-container');
       try {
@@ -225,8 +175,6 @@ async function fetchCustomerPoints(userId) {
       }
     }
 
-    // เรียกโหลดของรางวัลเมื่อเปิดหน้า
-    window.addEventListener('load', loadRewards);
     // ฟังก์ชันยืนยันการแลกคูปอง
     function confirmRedeem(rewardName, pointsNeeded) {
       if (currentPoints < pointsNeeded) {

@@ -71,8 +71,12 @@
       </h3>
     </div>
 
-    <!-- Rewards List (รายการของรางวัล) -->
-    <div class="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+    <!-- Rewards List Container -->
+    <div id="rewards-container" class="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+      <div class="text-center py-8 text-gray-400 text-sm">
+        <i class="fa-solid fa-spinner fa-spin text-pink-500 text-2xl mb-2"></i><br>กำลังโหลดรายการคูปอง...
+      </div>
+    </div>
       
       <!-- Reward Item 1 -->
       <div class="bg-white border border-pink-100 rounded-2xl p-3.5 flex items-center justify-between shadow-sm hover:border-pink-300 transition">
@@ -182,6 +186,47 @@ async function fetchCustomerPoints(userId) {
   }
 }
 
+    // ดึงรายการของรางวัลจาก Google Sheets
+    async function loadRewards() {
+      const container = document.getElementById('rewards-container');
+      try {
+        const res = await fetch(`${GAS_URL}?action=getRewards`, { method: "GET", redirect: "follow" });
+        const result = await res.json();
+
+        if (result.status === 'success' && result.data && result.data.length > 0) {
+          container.innerHTML = '';
+          result.data.forEach(item => {
+            const colorClass = item.color === 'rose' ? 'bg-rose-100 text-rose-600' : 
+                               item.color === 'amber' ? 'bg-amber-100 text-amber-600' : 'bg-pink-100 text-pink-600';
+            
+            const html = `
+              <div class="bg-white border border-pink-100 rounded-2xl p-3.5 flex items-center justify-between shadow-sm hover:border-pink-300 transition">
+                <div class="flex items-center gap-3">
+                  <div class="w-12 h-12 ${colorClass} rounded-xl flex items-center justify-center text-xl font-black shadow-inner">
+                    ${item.amountText}
+                  </div>
+                  <div class="text-left">
+                    <div class="font-bold text-gray-800 text-sm">${item.rewardName}</div>
+                    <div class="text-xs text-rose-500 font-bold">ใช้ ${item.pointsNeeded} แต้ม</div>
+                  </div>
+                </div>
+                <button onclick="confirmRedeem('${item.rewardName}', ${item.pointsNeeded})" class="bg-pink-500 hover:bg-pink-600 active:scale-95 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-md shadow-pink-500/20 transition">
+                  แลกคูปอง
+                </button>
+              </div>
+            `;
+            container.innerHTML += html;
+          });
+        } else {
+          container.innerHTML = `<div class="text-center py-6 text-gray-400 text-sm">ไม่มีรายการคูปองให้แลกในขณะนี้</div>`;
+        }
+      } catch (err) {
+        container.innerHTML = `<div class="text-center py-6 text-rose-500 text-sm">ไม่สามารถโหลดรายการคูปองได้</div>`;
+      }
+    }
+
+    // เรียกโหลดของรางวัลเมื่อเปิดหน้า
+    window.addEventListener('load', loadRewards);
     // ฟังก์ชันยืนยันการแลกคูปอง
     function confirmRedeem(rewardName, pointsNeeded) {
       if (currentPoints < pointsNeeded) {

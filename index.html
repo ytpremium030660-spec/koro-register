@@ -50,7 +50,7 @@
 
   <script>
     const LIFF_ID = "2011897462-WxM66h4q"; 
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyiC7cAjyJwyp-yPXa8pGpqUynxdZtSAue7e8-fsrhreMLJY0bgYJTUvi5HOZgg5Nct7w/exec"; // ⚠️ ใส่ WebApp URL ของคุณที่นี่
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzae9biIYqpKZ7VbS07-toOjGh-gHvSBvQknesqQhTTW8-7DqpWegOWGhNNJfpveYbvOg/exec"; // ⚠️ ใส่ WebApp URL ของคุณที่นี่
 
     window.onload = function() {
       if (typeof liff !== 'undefined' && LIFF_ID) {
@@ -70,39 +70,47 @@
       }
     };
 
-    async function handleRegister(e) {
-      e.preventDefault();
-      const btn = document.getElementById('btn-submit');
-      btn.disabled = true;
-      btn.innerText = "กำลังบันทึกข้อมูล...";
+    // ✅ โค้ดปรับแก้ไขในฟังก์ชัน handleRegister()
+async function handleRegister(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.innerText = "กำลังบันทึกข้อมูล...";
 
-      const payload = {
-        action: "add",
-        name: document.getElementById('member-name').value.trim(),
-        phone: document.getElementById('member-phone').value.trim(),
-        lineUserId: document.getElementById('line-user-id').value || ""
-      };
+  const payload = {
+    action: "add",
+    name: document.getElementById('member-name').value.trim(),
+    phone: document.getElementById('member-phone').value.trim(),
+    lineUserId: document.getElementById('line-user-id').value || ""
+  };
 
-      try {
-        const formData = new FormData();
-        formData.append('payload', JSON.stringify(payload));
+  try {
+    const formData = new FormData();
+    formData.append('payload', JSON.stringify(payload));
 
-        const res = await fetch(GAS_URL, { method: "POST", body: formData });
-        const data = await res.json();
+    // ยิงแบบ no-cors ป้องกัน CORS Error จาก Google Apps Script
+    await fetch(GAS_URL, { method: "POST", body: formData, mode: "no-cors" });
 
-        if (data.status === "duplicate") {
-          Swal.fire({ title: 'แจ้งเตือน', text: data.message || 'เป็นสมาชิกอยู่แล้วค่ะ', icon: 'warning', confirmButtonColor: '#db2777' });
-          btn.disabled = false;
-          btn.innerText = "✨ ยืนยันการสมัครสมาชิก";
-        } else {
-          Swal.fire({ title: '🎉 สมัครสมาชิกสำเร็จ!', text: 'ขอบคุณที่สมัครสมาชิก KORO STORE ค่ะ!', icon: 'success', confirmButtonColor: '#db2777' })
-            .then(() => { if (typeof liff !== 'undefined' && liff.isInClient()) liff.closeWindow(); });
-        }
-      } catch (err) {
-        Swal.fire({ title: '🎉 สมัครสมาชิกสำเร็จ!', text: 'ขอบคุณที่สมัครสมาชิก KORO STORE ค่ะ!', icon: 'success', confirmButtonColor: '#db2777' })
-          .then(() => { if (typeof liff !== 'undefined' && liff.isInClient()) liff.closeWindow(); });
-      }
-    }
+    Swal.fire({ 
+      title: '🎉 สมัครสมาชิกสำเร็จ!', 
+      text: 'ขอบคุณที่สมัครสมาชิก KORO STORE ค่ะ!', 
+      icon: 'success', 
+      confirmButtonColor: '#db2777' 
+    }).then(() => { 
+      if (typeof liff !== 'undefined' && liff.isInClient()) liff.closeWindow(); 
+    });
+
+  } catch (err) {
+    Swal.fire({ 
+      title: 'เกิดข้อผิดพลาด', 
+      text: 'ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่อีกครั้งค่ะ', 
+      icon: 'error', 
+      confirmButtonColor: '#db2777' 
+    });
+    btn.disabled = false;
+    btn.innerText = "✨ ยืนยันการสมัครสมาชิก";
+  }
+}
   </script>
 </body>
 </html>

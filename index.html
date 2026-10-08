@@ -1,108 +1,167 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>สมัครสมาชิก - KORO STORE</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>body { font-family: 'Kanit', sans-serif; }</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>สมัครสมาชิก - KORO STORE</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- LINE LIFF SDK -->
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- Google Fonts & FontAwesome -->
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    body { 
+      font-family: 'Kanit', sans-serif; 
+    }
+  </style>
 </head>
-<body class="bg-pink-50 min-h-screen flex items-center justify-center p-4">
+<body class="bg-gradient-to-br from-pink-100 via-rose-50 to-pink-200 min-h-screen flex items-center justify-center p-4 sm:p-6">
 
-  <div class="bg-white rounded-3xl shadow-xl max-w-sm w-full p-6 text-center space-y-5 border border-pink-100">
-    <div class="space-y-1">
-      <div class="w-20 h-20 bg-pink-100 text-pink-600 rounded-full flex items-center justify-center mx-auto text-3xl shadow-inner">🛒</div>
-      <h2 class="text-2xl font-bold text-gray-800">KORO STORE</h2>
-      <p class="text-xs text-pink-600 font-medium">สมัครสมาชิกสะสมแต้ม (10 บาท = 1 แต้ม)</p>
-    </div>
+  <!-- Main Card Container -->
+  <div class="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 text-center space-y-6 border border-white/40 transform transition-all">
+    
+    <!-- Header / Logo -->
+    <div class="space-y-2">
+      <div class="w-20 h-20 bg-gradient-to-tr from-pink-500 to-rose-400 text-white rounded-2xl flex items-center justify-center mx-auto text-3xl shadow-lg shadow-pink-500/30">
+        <i class="fa-solid fa-cart-shopping"></i>
+      </div>
+      <h2 class="text-2xl sm:text-3xl font-extrabold text-gray-800 tracking-tight">KORO STORE</h2>
+      <span class="inline-block bg-pink-100 text-pink-700 text-xs font-semibold px-3 py-1 rounded-full border border-pink-200">
+        🎁 สมัครสมาชิกสะสมแต้ม (10 บาท = 1 แต้ม)
+      </span>
+    </div>
 
-    <div id="profile-box" class="bg-slate-50 p-3 rounded-2xl border flex items-center gap-3 hidden">
-      <img id="user-picture" src="" class="w-12 h-12 rounded-full border border-pink-300">
-      <div class="text-left min-w-0 flex-1">
-        <div class="text-[10px] text-gray-400">บัญชี LINE:</div>
-        <div id="user-name" class="font-bold text-gray-800 text-sm truncate">-</div>
-      </div>
-    </div>
+    <!-- LINE Profile Box -->
+    <div id="profile-box" class="bg-slate-50/80 p-3.5 rounded-2xl border border-slate-200/80 flex items-center gap-3.5 shadow-sm hidden">
+      <img id="user-picture" src="" class="w-12 h-12 rounded-full border-2 border-pink-400 object-cover shadow-sm">
+      <div class="text-left min-w-0 flex-1">
+        <div class="text-[11px] text-gray-400 font-medium">บัญชี LINE เชื่อมต่อแล้ว</div>
+        <div id="user-name" class="font-bold text-gray-800 text-sm truncate">-</div>
+      </div>
+    </div>
 
-    <form id="register-form" onsubmit="handleRegister(event)" class="space-y-3 text-left">
-      <input type="hidden" id="line-user-id">
+    <!-- Form Section -->
+    <form id="register-form" onsubmit="handleRegister(event)" class="space-y-4 text-left">
+      <input type="hidden" id="line-user-id">
 
-      <div>
-        <label class="text-xs font-bold text-gray-700 block mb-1">ชื่อ-นามสกุล <span class="text-rose-500">*</span></label>
-        <input type="text" id="member-name" required placeholder="ระบุชื่อของคุณ" class="w-full border rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-pink-500 focus:outline-none bg-gray-50">
-      </div>
+      <!-- Name Input -->
+      <div>
+        <label class="text-xs font-bold text-gray-700 block mb-1.5">
+          ชื่อ-นามสกุล <span class="text-rose-500">*</span>
+        </label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+            <i class="fa-regular fa-user"></i>
+          </div>
+          <input type="text" id="member-name" required placeholder="ระบุชื่อ-นามสกุลของคุณ" 
+            class="w-full border border-gray-200 rounded-xl pl-10 pr-3.5 py-3 text-sm focus:ring-2 focus:ring-pink-500 focus:border-pink-500 focus:outline-none bg-gray-50/50 transition">
+        </div>
+      </div>
 
-      <div>
-        <label class="text-xs font-bold text-gray-700 block mb-1">เบอร์โทรศัพท์ (10 หลัก) <span class="text-rose-500">*</span></label>
-        <input type="tel" id="member-phone" required pattern="[0-9]{10}" maxlength="10" placeholder="08XXXXXXXX" class="w-full border rounded-xl px-3 py-2.5 text-sm font-bold text-pink-600 tracking-wider text-center focus:ring-2 focus:ring-pink-500 focus:outline-none bg-gray-50">
-      </div>
+      <!-- Phone Input -->
+      <div>
+        <label class="text-xs font-bold text-gray-700 block mb-1.5">
+          เบอร์โทรศัพท์ (10 หลัก) <span class="text-rose-500">*</span>
+        </label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+            <i class="fa-solid fa-mobile-screen"></i>
+          </div>
+          <input type="tel" id="member-phone" required pattern="[0-9]{10}" maxlength="10" placeholder="08XXXXXXXX" 
+            class="w-full border border-gray-200 rounded-xl pl-10 pr-3.5 py-3 text-sm font-semibold text-gray-800 tracking-widest focus:ring-2 focus:ring-pink-500 focus:border-pink-500 focus:outline-none bg-gray-50/50 transition">
+        </div>
+      </div>
 
-      <button type="submit" id="btn-submit" class="w-full bg-pink-600 hover:bg-pink-700 text-white py-3 rounded-xl font-bold text-base shadow-lg transition flex items-center justify-center gap-2 mt-2">
-        ✨ ยืนยันการสมัครสมาชิก
-      </button>
-    </form>
+      <!-- Submit Button -->
+      <button type="submit" id="btn-submit" 
+        class="w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 active:scale-[0.98] text-white py-3.5 rounded-xl font-bold text-base shadow-lg shadow-pink-500/25 transition-all duration-200 flex items-center justify-center gap-2 mt-4">
+        <span>✨ ยืนยันการสมัครสมาชิก</span>
+      </button>
+    </form>
 
-    <div class="text-[10px] text-gray-400">* สมัครครั้งเดียว ใช้สะสมแต้มและรับส่วนลดได้ตลอด</div>
-  </div>
+    <!-- Footer Note -->
+    <div class="text-xs text-gray-400 pt-1 border-t border-gray-100">
+      * สมัครครั้งเดียว ใช้สะสมแต้มและรับส่วนลดได้ตลอด
+    </div>
+  </div>
 
-  <script>
-    const LIFF_ID = "2011897462-WxM66h4q"; 
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyA8oytwGluv8sediQg8l22DXW8tRxXLg0SPZ3lFsyOssZiCOuh4y4Ve1dq86vC0j6wog/exec"; // ⚠️ ใส่ WebApp URL ของคุณที่นี่
+  <script>
+    const LIFF_ID = "2011897462-WxM66h4q"; 
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbyA8oytwGluv8sediQg8l22DXW8tRxXLg0SPZ3lFsyOssZiCOuh4y4Ve1dq86vC0j6wog/exec";
 
-    window.onload = function() {
-      if (typeof liff !== 'undefined' && LIFF_ID) {
-        liff.init({ liffId: LIFF_ID }).then(() => {
-          if (liff.isLoggedIn()) {
-            liff.getProfile().then(profile => {
-              document.getElementById('line-user-id').value = profile.userId;
-              document.getElementById('user-name').innerText = profile.displayName;
-              document.getElementById('user-picture').src = profile.pictureUrl || 'https://via.placeholder.com/150';
-              document.getElementById('member-name').value = profile.displayName;
-              document.getElementById('profile-box').classList.remove('hidden');
-            });
-          } else {
-            liff.login();
-          }
-        }).catch(err => console.error("LIFF Init Error:", err));
-      }
-    };
+    window.onload = function() {
+      if (typeof liff !== 'undefined' && LIFF_ID) {
+        liff.init({ liffId: LIFF_ID }).then(() => {
+          if (liff.isLoggedIn()) {
+            liff.getProfile().then(profile => {
+              document.getElementById('line-user-id').value = profile.userId;
+              document.getElementById('user-name').innerText = profile.displayName;
+              document.getElementById('user-picture').src = profile.pictureUrl || 'https://via.placeholder.com/150';
+              document.getElementById('member-name').value = profile.displayName;
+              document.getElementById('profile-box').classList.remove('hidden');
+            });
+          } else {
+            liff.login();
+          }
+        }).catch(err => console.error("LIFF Init Error:", err));
+      }
+    };
 
-    async function handleRegister(e) {
-      e.preventDefault();
-      const btn = document.getElementById('btn-submit');
-      btn.disabled = true;
-      btn.innerText = "กำลังบันทึกข้อมูล...";
+    async function handleRegister(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-submit');
+      btn.disabled = true;
+      btn.innerText = "กำลังบันทึกข้อมูล...";
 
-      const payload = {
-        action: "add",
-        name: document.getElementById('member-name').value.trim(),
-        phone: document.getElementById('member-phone').value.trim(),
-        lineUserId: document.getElementById('line-user-id').value || ""
-      };
+      const payload = {
+        action: "add",
+        name: document.getElementById('member-name').value.trim(),
+        phone: document.getElementById('member-phone').value.trim(),
+        lineUserId: document.getElementById('line-user-id').value || ""
+      };
 
-      try {
-        const formData = new FormData();
-        formData.append('payload', JSON.stringify(payload));
+      try {
+        const formData = new FormData();
+        formData.append('payload', JSON.stringify(payload));
 
-        const res = await fetch(GAS_URL, { method: "POST", body: formData });
-        const data = await res.json();
+        const res = await fetch(GAS_URL, { method: "POST", body: formData });
+        const data = await res.json();
 
-        if (data.status === "duplicate") {
-          Swal.fire({ title: 'แจ้งเตือน', text: data.message || 'เป็นสมาชิกอยู่แล้วค่ะ', icon: 'warning', confirmButtonColor: '#db2777' });
-          btn.disabled = false;
-          btn.innerText = "✨ ยืนยันการสมัครสมาชิก";
-        } else {
-          Swal.fire({ title: '🎉 สมัครสมาชิกสำเร็จ!', text: 'ขอบคุณที่สมัครสมาชิก KORO STORE ค่ะ!', icon: 'success', confirmButtonColor: '#db2777' })
-            .then(() => { if (typeof liff !== 'undefined' && liff.isInClient()) liff.closeWindow(); });
-        }
-      } catch (err) {
-        Swal.fire({ title: '🎉 สมัครสมาชิกสำเร็จ!', text: 'ขอบคุณที่สมัครสมาชิก KORO STORE ค่ะ!', icon: 'success', confirmButtonColor: '#db2777' })
-          .then(() => { if (typeof liff !== 'undefined' && liff.isInClient()) liff.closeWindow(); });
-      }
-    }
-  </script>
+        if (data.status === "duplicate") {
+          Swal.fire({ 
+            title: 'แจ้งเตือน', 
+            text: data.message || 'เป็นสมาชิกอยู่แล้วค่ะ', 
+            icon: 'warning', 
+            confirmButtonColor: '#ec4899' 
+          });
+          btn.disabled = false;
+          btn.innerText = "✨ ยืนยันการสมัครสมาชิก";
+        } else {
+          Swal.fire({ 
+            title: '🎉 สมัครสมาชิกสำเร็จ!', 
+            text: 'ขอบคุณที่สมัครสมาชิก KORO STORE ค่ะ!', 
+            icon: 'success', 
+            confirmButtonColor: '#ec4899' 
+          }).then(() => { 
+            if (typeof liff !== 'undefined' && liff.isInClient()) liff.closeWindow(); 
+          });
+        }
+      } catch (err) {
+        Swal.fire({ 
+          title: '🎉 สมัครสมาชิกสำเร็จ!', 
+          text: 'ขอบคุณที่สมัครสมาชิก KORO STORE ค่ะ!', 
+          icon: 'success', 
+          confirmButtonColor: '#ec4899' 
+        }).then(() => { 
+          if (typeof liff !== 'undefined' && liff.isInClient()) liff.closeWindow(); 
+        });
+      }
+    }
+  </script>
 </body>
 </html>

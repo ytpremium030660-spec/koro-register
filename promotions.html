@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>โปรโมชั่นประจำเดือน - KORO STORE</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style> body { font-family: 'Kanit', sans-serif; } </style>
+</head>
+<body class="bg-gradient-to-br from-pink-100 via-rose-50 to-pink-200 min-h-screen flex items-center justify-center p-4">
+
+  <div class="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl max-w-md w-full p-5 sm:p-6 text-center space-y-5 border border-white/50">
+    
+    <!-- Header -->
+    <div class="flex items-center justify-between border-b pb-3 border-gray-100">
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 bg-white rounded-xl shadow flex items-center justify-center p-1 border border-pink-100">
+          <img src="https://i.ibb.co/TD131Sjd/S-10043396-removebg-preview.png" class="w-full h-full object-contain">
+        </div>
+        <div class="text-left">
+          <h1 class="font-black text-gray-800 text-lg leading-tight">KORO STORE</h1>
+          <p class="text-[11px] text-pink-600 font-bold">สินค้าราคาพิเศษประจำเดือน</p>
+        </div>
+      </div>
+      <span class="bg-gradient-to-r from-pink-500 to-rose-500 text-white text-[10px] font-extrabold px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
+        <i class="fa-solid fa-fire"></i> HOT PROMO
+      </span>
+    </div>
+
+    <!-- Banner -->
+    <div class="bg-gradient-to-br from-pink-500 via-rose-500 to-rose-600 text-white rounded-2xl p-5 shadow-lg shadow-pink-500/30 relative overflow-hidden text-left">
+      <div class="absolute -right-6 -bottom-6 text-white/10 text-9xl pointer-events-none">
+        <i class="fa-solid fa-bag-shopping"></i>
+      </div>
+      <span class="bg-white text-rose-600 text-[10px] font-extrabold px-2.5 py-0.5 rounded-md shadow-sm uppercase">SPECIAL DEAL</span>
+      <h2 class="text-xl font-black mt-2 leading-snug">โปรโมชั่นพิเศษประจำเดือน! 🛍️</h2>
+      <p class="text-xs text-pink-100 mt-1">ช้อปสนุก สะสมแต้มรับส่วนลดสุดคุ้มที่ KORO STORE</p>
+    </div>
+
+    <div class="flex items-center justify-between">
+      <h3 class="text-sm font-bold text-gray-800 flex items-center gap-1.5">
+        <i class="fa-solid fa-tags text-rose-500"></i> รายการโปรโมชั่นวันนี้
+      </h3>
+      <span class="text-[11px] text-gray-400">อัปเดตอัตโนมัติ</span>
+    </div>
+
+    <!-- Area แสดงโปรโมชั่นจาก Google Sheet -->
+    <div id="promo-list" class="space-y-3.5 max-h-[380px] overflow-y-auto pr-1 text-left">
+      <div class="text-center py-8 text-gray-400 text-sm">
+        <i class="fa-solid fa-spinner fa-spin text-pink-500 text-2xl mb-2"></i><br>กำลังโหลดโปรโมชั่นล่าสุด...
+      </div>
+    </div>
+
+    <div class="text-[10px] text-gray-400 border-t border-gray-100 pt-2">
+      * สอบถามรายละเอียดโปรโมชั่นเพิ่มเติมได้ที่หน้าร้าน KORO STORE
+    </div>
+
+  </div>
+
+  <script>
+    const LIFF_ID = "YOUR_PROMOTION_LIFF_ID"; 
+    const GAS_URL = "https://script.google.com/macros/s/YOUR_GAS_WEB_APP_ID/exec"; 
+
+    window.onload = function() {
+      if (typeof liff !== 'undefined' && LIFF_ID && LIFF_ID !== "YOUR_PROMOTION_LIFF_ID") {
+        liff.init({ liffId: LIFF_ID });
+      }
+      loadPromotions();
+    };
+
+    // ดึงข้อมูลโปรโมชั่นจาก Google Sheets
+    async function loadPromotions() {
+      const container = document.getElementById('promo-list');
+      try {
+        const res = await fetch(`${GAS_URL}?action=getPromotions`);
+        const result = await res.json();
+
+        if (result.status === 'success' && result.data.length > 0) {
+          container.innerHTML = ''; // ล้าง Loading
+          
+          result.data.forEach(item => {
+            const oldPriceHTML = item.oldPrice ? `<span class="text-gray-400 text-xs line-through ml-2">${item.oldPrice}</span>` : '';
+            
+            const html = `
+              <div class="bg-white border border-pink-100 rounded-2xl p-3.5 flex items-center gap-3.5 shadow-sm hover:border-pink-300 transition">
+                <div class="w-14 h-14 bg-pink-50 rounded-xl border border-pink-100 flex items-center justify-center text-pink-500 text-2xl flex-shrink-0">
+                  <i class="fa-solid fa-${item.icon}"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <span class="bg-pink-100 text-pink-600 text-[9px] font-bold px-2 py-0.5 rounded-full">${item.badge}</span>
+                  <h4 class="font-bold text-gray-800 text-sm truncate mt-1">${item.title}</h4>
+                  <p class="text-xs text-gray-400 truncate">${item.detail}</p>
+                  <div class="mt-1 flex items-baseline">
+                    <span class="text-rose-600 font-extrabold text-sm">${item.price}</span>
+                    ${oldPriceHTML}
+                  </div>
+                </div>
+              </div>
+            `;
+            container.innerHTML += html;
+          });
+        } else {
+          container.innerHTML = `<div class="text-center py-6 text-gray-400 text-sm">ยังไม่มีรายการโปรโมชั่นในขณะนี้</div>`;
+        }
+      } catch (err) {
+        container.innerHTML = `<div class="text-center py-6 text-rose-500 text-sm">ไม่สามารถโหลดข้อมูลโปรโมชั่นได้</div>`;
+      }
+    }
+  </script>
+</body>
+</html>

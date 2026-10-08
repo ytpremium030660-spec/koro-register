@@ -132,47 +132,55 @@
   </div>
 
   <script>
-    // ⚠️ 1. ใส่ LIFF ID ของหน้าแลกรางวัล
-    const LIFF_ID = "YOUR_REDEEM_LIFF_ID"; 
-    // ⚠️ 2. ใส่ Web App URL ของ Google Apps Script
-    const GAS_URL = "https://script.google.com/macros/s/YOUR_GAS_WEB_APP_ID/exec"; 
+    // ⚠️ 1. ใส่ LIFF ID สำหรับหน้าคูปองที่คุณสร้างใน LINE Developers
+const REDEEM_LIFF_ID = "2011897462-5PQAqbot"; 
 
-    let userLineId = "";
-    let currentPoints = 0;
+// ⚠️ 2. ใส่ Web App URL ของ Google Apps Script
+const GAS_URL = "https://script.google.com/macros/s/AKfycbx9KNr9pIev9xnaG0UMANIkN7qHzxLxJ8s5eE0gcwWm3uuZc7K7bSzDzUOzJvGqC8nxhA/exec"; 
 
-    window.onload = function() {
-      if (typeof liff !== 'undefined' && LIFF_ID && LIFF_ID !== "YOUR_REDEEM_LIFF_ID") {
-        liff.init({ liffId: LIFF_ID }).then(() => {
-          if (liff.isLoggedIn()) {
-            liff.getProfile().then(profile => {
-              userLineId = profile.userId;
-              document.getElementById('user-name').innerText = profile.displayName;
-              document.getElementById('user-picture').src = profile.pictureUrl || 'https://via.placeholder.com/150';
-              fetchPoints();
-            });
-          } else {
-            liff.login();
-          }
-        }).catch(err => console.error("LIFF Init Error:", err));
+let userLineId = "";
+let currentPoints = 0;
+
+window.onload = function() {
+  if (typeof liff !== 'undefined' && REDEEM_LIFF_ID) {
+    liff.init({ liffId: REDEEM_LIFF_ID }).then(() => {
+      if (liff.isLoggedIn()) {
+        // ดึงข้อมูล Profile จาก LINE
+        liff.getProfile().then(profile => {
+          userLineId = profile.userId;
+          
+          // นำชื่อและรูปโปรไฟล์มาแสดงบนการ์ด
+          document.getElementById('user-name').innerText = profile.displayName;
+          document.getElementById('user-picture').src = profile.pictureUrl || 'https://via.placeholder.com/150';
+          
+          // 🚀 เรียกฟังก์ชันไปอ่านแต้มจาก Google Sheet
+          fetchCustomerPoints(userLineId);
+        });
+      } else {
+        liff.login();
       }
-    };
+    }).catch(err => console.error("LIFF Init Error:", err));
+  }
+};
 
-    // ฟังก์ชันดึงแต้มจาก Google Sheet ผ่าน GAS
-    async function fetchPoints() {
-      if (!userLineId) return;
-      
-      try {
-        const res = await fetch(`${GAS_URL}?action=getPoints&lineUserId=${userLineId}`);
-        const data = await res.json();
-        
-        if (data.status === 'success') {
-          currentPoints = data.points;
-          document.getElementById('user-points').innerText = currentPoints;
-        }
-      } catch (err) {
-        console.error("Error fetching points:", err);
-      }
+// ฟังก์ชันดึงคะแนนของลูกค้าตาม lineUserId
+async function fetchCustomerPoints(userId) {
+  try {
+    // ส่ง Request แบบ GET ไปยัง GAS
+    const response = await fetch(`${GAS_URL}?action=getPoints&lineUserId=${userId}`);
+    const result = await response.json();
+
+    if (result.status === 'success') {
+      currentPoints = result.points;
+      // อัปเดตคะแนนลงในหน้าเว็บ
+      document.getElementById('user-points').innerText = currentPoints;
+    } else {
+      console.error("ไม่สามารถดึงข้อมูลแต้มได้:", result.message);
     }
+  } catch (err) {
+    console.error("Fetch Points Error:", err);
+  }
+}
 
     // ฟังก์ชันยืนยันการแลกคูปอง
     function confirmRedeem(rewardName, pointsNeeded) {

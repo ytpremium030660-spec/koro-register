@@ -9,102 +9,97 @@ function checkDrivePermission() {
   Logger.log(root.getName());
 }
 
+function responseJSON(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
 // ===================================================
-// 1. doGet: รับ Request แบบ GET (ดึงสมาชิก / ดึงแต้ม / โปรโมชั่น / ของรางวัล / งานฝากพิมพ์)
+// 1. doGet: รับ Request แบบ GET
 // ===================================================
 function doGet(e) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var action = (e && e.parameter && e.parameter.action) ? e.parameter.action : "";
 
-    // ------------------------------------
     // Action A: ดึงโปรโมชั่นจากแท็บ "Promotions"
-    // ------------------------------------
     if (action === "getPromotions") {
       var promoSheet = ss.getSheetByName("Promotions");
       if (!promoSheet) {
         return responseJSON({ status: "error", message: "ไม่พบแท็บ Promotions" });
       }
-
       var promoRows = promoSheet.getDataRange().getValues();
       var promotions = [];
-
       for (var p = 1; p < promoRows.length; p++) {
-        var status = String(promoRows[p][6] || "").trim().toLowerCase(); // Col G (status)
+        var status = String(promoRows[p][6] || "").trim().toLowerCase();
         if (status === "active") {
           promotions.push({
-            badge: String(promoRows[p][0] || ""),    // Col A
-            title: String(promoRows[p][1] || ""),    // Col B
-            detail: String(promoRows[p][2] || ""),   // Col C
-            price: String(promoRows[p][3] || ""),    // Col D
-            oldPrice: String(promoRows[p][4] || ""), // Col E
-            icon: String(promoRows[p][5] || "tags")  // Col F
+            badge: String(promoRows[p][0] || ""),
+            title: String(promoRows[p][1] || ""),
+            detail: String(promoRows[p][2] || ""),
+            price: String(promoRows[p][3] || ""),
+            oldPrice: String(promoRows[p][4] || ""),
+            icon: String(promoRows[p][5] || "tags")
           });
         }
       }
       return responseJSON({ status: "success", data: promotions });
     }
 
-    // ------------------------------------
     // Action B: ดึงของรางวัลจากแท็บ "Rewards"
-    // ------------------------------------
     if (action === "getRewards") {
       var rewardSheet = ss.getSheetByName("Rewards");
       if (!rewardSheet) {
         return responseJSON({ status: "error", message: "ไม่พบแท็บ Rewards" });
       }
-
       var rRows = rewardSheet.getDataRange().getValues();
       var rewards = [];
-
       for (var r = 1; r < rRows.length; r++) {
-        var rStatus = String(rRows[r][4] || "").trim().toLowerCase(); // Col E
+        var rStatus = String(rRows[r][4] || "").trim().toLowerCase();
         if (rStatus === "active") {
           rewards.push({
-            rewardName: String(rRows[r][0] || ""),   // Col A
-            pointsNeeded: Number(rRows[r][1] || 0),  // Col B
-            amountText: String(rRows[r][2] || ""),   // Col C
-            color: String(rRows[r][3] || "pink")     // Col D
+            rewardName: String(rRows[r][0] || ""),
+            pointsNeeded: Number(rRows[r][1] || 0),
+            amountText: String(rRows[r][2] || ""),
+            color: String(rRows[r][3] || "pink")
           });
         }
       }
       return responseJSON({ status: "success", data: rewards });
     }
 
-    // ------------------------------------
-    // Action C: ดึงแต้มสมาชิกเฉพาะรายบุคคล (สำหรับหน้าแลกคูปอง)
-    // ------------------------------------
+    // Action C: ดึงแต้มสมาชิกเฉพาะรายบุคคล
     if (action === "getPoints") {
-      var lineUserId = String(e.parameter.lineUserId || "").trim();
-      var memberSheet = ss.getSheetByName("Members") || ss.getActiveSheet();
+      var lineUserId = String((e && e.parameter && e.parameter.lineUserId) || "").trim();
+      var phoneQuery = String((e && e.parameter && e.parameter.phone) || "").replace(/\D/g, "");
+      
+      var memberSheet = getOrCreateSheet(ss, "Members", ["ID", "Name", "Phone", "Points", "CreatedAt", "LineUserId"]);
       var mRows = memberSheet.getDataRange().getValues();
 
       for (var m = 1; m < mRows.length; m++) {
-        var rowLineId = String(mRows[m][5] || "").trim(); // Col F (LineUserId)
-        var rowPhone = String(mRows[m][2] || "").replace(/\D/g, ""); // Col C (Phone)
+        var rowLineId = String(mRows[m][5] || "").trim();
+        var rowPhone = String(mRows[m][2] || "").replace(/\D/g, "");
 
-        if ((lineUserId !== "" && rowLineId === lineUserId) || (lineUserId !== "" && rowPhone === lineUserId)) {
+        if ((lineUserId !== "" && rowLineId === lineUserId) || 
+            (phoneQuery !== "" && rowPhone === phoneQuery) ||
+            (lineUserId !== "" && rowPhone === lineUserId)) {
           return responseJSON({
             status: "success",
-            points: Number(mRows[m][3] || 0) // Col D (Points)
+            points: Number(mRows[m][3] || 0)
           });
         }
       }
       return responseJSON({ status: "success", points: 0 });
     }
 
-    // ------------------------------------
-    // Action D: ดึงรายการงานฝากพิมพ์ที่ค้างอยู่ (สำหรับ POS หน้าร้าน)
-    // ------------------------------------
+    // Action D: ดึงรายการงานฝากพิมพ์ที่ค้างอยู่
     if (action === "getPendingPrintOrders") {
       var pendingOrders = getPendingPrintOrders();
       return responseJSON({ status: "success", orders: pendingOrders });
     }
 
-    // ------------------------------------
-    // Action E: ดึงข้อมูลสมาชิกทั้งหมด (สำหรับระบบ POS หน้าร้าน)
-    // ------------------------------------
-    var sheet = ss.getSheetByName("Members") || ss.getActiveSheet();
+    // Action E: ดึงข้อมูลสมาชิกทั้งหมด (Default)
+    var sheet = getOrCreateSheet(ss, "Members", ["ID", "Name", "Phone", "Points", "CreatedAt", "LineUserId"]);
     var rows = sheet.getDataRange().getDisplayValues();
     var members = [];
 
@@ -138,29 +133,26 @@ function doGet(e) {
 }
 
 // ===================================================
-// 2. doPost: รับข้อมูล สมัครใหม่ / อัปเดตแต้ม / แลกคูปอง / ตรวจคูปอง / ฝากพิมพ์งาน / แก้ไข / ลบ
+// 2. doPost: รับข้อมูล
 // ===================================================
 function doPost(e) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName("Members") || ss.getActiveSheet();
     var data = {};
 
-    // อ่านข้อมูล Payload
-    if (e.postData && e.postData.contents) {
+    if (e && e.postData && e.postData.contents) {
       data = JSON.parse(e.postData.contents);
-    } else if (e.parameter && e.parameter.payload) {
+    } else if (e && e.parameter && e.parameter.payload) {
       data = JSON.parse(e.parameter.payload);
-    } else {
-      data = e.parameter || {};
+    } else if (e && e.parameter) {
+      data = e.parameter;
     }
 
-    var action = data.action || "add";
+    var action = String(data.action || "add").trim();
 
-    // ------------------------------------
     // Action 1: ตัดแต้มแลกของรางวัล/คูปอง (redeem)
-    // ------------------------------------
     if (action === "redeem") {
+      var sheet = getOrCreateSheet(ss, "Members", ["ID", "Name", "Phone", "Points", "CreatedAt", "LineUserId"]);
       var lineUserIdRedeem = String(data.lineUserId || "").trim();
       var pointsToRedeem = Number(data.pointsToRedeem || 0);
       var rewardName = String(data.rewardName || "ส่วนลดคูปอง");
@@ -170,12 +162,12 @@ function doPost(e) {
       var currentPoints = 0;
 
       for (var k = 1; k < rowsRedeem.length; k++) {
-        var rLineId = String(rowsRedeem[k][5] || "").trim(); // Col F (LineUserId)
-        var rPhone = String(rowsRedeem[k][2] || "").replace(/\D/g, ""); // Col C (Phone)
+        var rLineId = String(rowsRedeem[k][5] || "").trim();
+        var rPhone = String(rowsRedeem[k][2] || "").replace(/\D/g, "");
 
         if ((lineUserIdRedeem !== "" && rLineId === lineUserIdRedeem) || (lineUserIdRedeem !== "" && rPhone === lineUserIdRedeem)) {
-          userRowIndex = k + 1; // ลำดับ Row ใน Sheet เริ่มที่ 1
-          currentPoints = Number(rowsRedeem[k][3] || 0); // Col D (Points)
+          userRowIndex = k + 1;
+          currentPoints = Number(rowsRedeem[k][3] || 0);
           break;
         }
       }
@@ -188,20 +180,13 @@ function doPost(e) {
         return responseJSON({ status: "error", message: "แต้มสะสมไม่เพียงพอค่ะ" });
       }
 
-      // หักแต้มและอัปเดตลง Sheet Members
       var remainingPoints = currentPoints - pointsToRedeem;
-      sheet.getRange(userRowIndex, 4).setValue(remainingPoints); // Col D (Points)
+      sheet.getRange(userRowIndex, 4).setValue(remainingPoints);
 
-      // สุ่มรหัสคูปองส่วนลด
       var couponCode = "KORO-" + Math.random().toString(36).substring(2, 8).toUpperCase();
       var nowStr = Utilities.formatDate(new Date(), "Asia/Bangkok", "dd/MM/yyyy HH:mm:ss");
 
-      // บันทึกรหัสคูปองลงในแท็บ "Coupons"
-      var couponSheet = ss.getSheetByName("Coupons");
-      if (!couponSheet) {
-        couponSheet = ss.insertSheet("Coupons");
-        couponSheet.appendRow(["couponCode", "rewardName", "discountAmount", "lineUserId", "status", "createdAt", "usedAt"]);
-      }
+      var couponSheet = getOrCreateSheet(ss, "Coupons", ["couponCode", "rewardName", "discountAmount", "lineUserId", "status", "createdAt", "usedAt"]);
       
       var rawDiscount = data.discountAmount;
       var discountAmount = 0;
@@ -221,7 +206,7 @@ function doPost(e) {
           }
         }
         if (discountAmount === 0 && pointsToRedeem > 0) {
-          discountAmount = pointsToRedeem / 10; // สำรอง: 10 แต้ม = 1 บาท
+          discountAmount = pointsToRedeem / 10;
         }
       }
 
@@ -235,9 +220,7 @@ function doPost(e) {
       });
     }
 
-    // ------------------------------------
     // Action 2: ตรวจสอบและใช้งานคูปองจากระบบ POS (verifyCoupon)
-    // ------------------------------------
     if (action === "verifyCoupon") {
       var inputCoupon = String(data.couponCode || "").trim().toUpperCase();
       var couponSheet = ss.getSheetByName("Coupons");
@@ -249,8 +232,8 @@ function doPost(e) {
       var cRows = couponSheet.getDataRange().getValues();
       
       for (var c = 1; c < cRows.length; c++) {
-        var codeInSheet = String(cRows[c][0] || "").trim().toUpperCase(); // Col A (couponCode)
-        var status = String(cRows[c][4] || "").trim().toLowerCase();      // Col E (status)
+        var codeInSheet = String(cRows[c][0] || "").trim().toUpperCase();
+        var status = String(cRows[c][4] || "").trim().toLowerCase();
 
         if (codeInSheet === inputCoupon) {
           if (status === "used") {
@@ -258,12 +241,12 @@ function doPost(e) {
           }
           
           if (status === "active") {
-            var discountValue = Number(cRows[c][2] || 0); // Col C (discountAmount)
-            var rewardNameText = String(cRows[c][1] || ""); // Col B (rewardName)
+            var discountValue = Number(cRows[c][2] || 0);
+            var rewardNameText = String(cRows[c][1] || "");
 
             var usedTimeStr = Utilities.formatDate(new Date(), "Asia/Bangkok", "dd/MM/yyyy HH:mm:ss");
-            couponSheet.getRange(c + 1, 5).setValue("used");      // Col E (status)
-            couponSheet.getRange(c + 1, 7).setValue(usedTimeStr); // Col G (usedAt)
+            couponSheet.getRange(c + 1, 5).setValue("used");
+            couponSheet.getRange(c + 1, 7).setValue(usedTimeStr);
 
             return responseJSON({
               status: "success",
@@ -278,26 +261,21 @@ function doPost(e) {
       return responseJSON({ status: "not_found", message: "ไม่พบรหัสคูปองนี้ในระบบ" });
     }
 
-    // ------------------------------------
     // Action 3: บันทึกฝากพิมพ์งานล่วงหน้า (processPrintPreOrder)
-    // ------------------------------------
     if (action === "processPrintPreOrder") {
       var printRes = processPrintPreOrder(data);
       return responseJSON(printRes);
     }
 
-    // ------------------------------------
     // Action 4: เปลี่ยนสถานะงานฝากพิมพ์เป็นสำเร็จ (completePrintOrder)
-    // ------------------------------------
     if (action === "completePrintOrder") {
       var isCompleted = completePrintOrder(data.orderId);
       return responseJSON({ status: isCompleted ? "success" : "not_found" });
     }
 
-    // ------------------------------------
     // Action 5: ลบสมาชิก (delete)
-    // ------------------------------------
     if (action === "delete") {
+      var sheet = getOrCreateSheet(ss, "Members", ["ID", "Name", "Phone", "Points", "CreatedAt", "LineUserId"]);
       var allDataDel = sheet.getDataRange().getDisplayValues();
       var deleted = false;
       for (var d = allDataDel.length - 1; d >= 1; d--) {
@@ -313,10 +291,9 @@ function doPost(e) {
       return responseJSON({ status: deleted ? "success" : "not_found" });
     }
 
-    // ------------------------------------
-    // Action 6: อัปเดตแต้ม / แก้ไขข้อมูลสมาชิก (updatePoints / edit / update / updateMember)
-    // ------------------------------------
+    // Action 6: อัปเดตแต้ม / แก้ไขข้อมูลสมาชิก
     if (action === "updatePoints" || action === "edit" || action === "update" || action === "updateMember") {
+      var sheet = getOrCreateSheet(ss, "Members", ["ID", "Name", "Phone", "Points", "CreatedAt", "LineUserId"]);
       var allDataUp = sheet.getDataRange().getDisplayValues();
       var updated = false;
 
@@ -354,50 +331,56 @@ function doPost(e) {
       return responseJSON({ status: updated ? "success" : "not_found", updatedPoints: data.points });
     }
 
-    // ------------------------------------
-    // Action 7: สมัครสมาชิกใหม่ (add)
-    // ------------------------------------
-    var cleanPhone = String(data.phone || "").replace(/\D/g, "");
-    if (cleanPhone.length === 9 && !cleanPhone.startsWith("0")) cleanPhone = "0" + cleanPhone;
-    var lineUserId = String(data.lineUserId || data.LineUserId || "").trim();
+    // Action 7: สมัครสมาชิกใหม่ (add / register)
+    if (action === "add" || action === "register") {
+      var sheet = getOrCreateSheet(ss, "Members", ["ID", "Name", "Phone", "Points", "CreatedAt", "LineUserId"]);
+      var cleanPhone = String(data.phone || "").replace(/\D/g, "");
+      if (cleanPhone.length === 9 && !cleanPhone.startsWith("0")) cleanPhone = "0" + cleanPhone;
+      var lineUserId = String(data.lineUserId || data.LineUserId || "").trim();
 
-    var rowsAdd = sheet.getDataRange().getDisplayValues();
-    for (var r = 1; r < rowsAdd.length; r++) {
-      var rowPhoneAdd = String(rowsAdd[r][2] || "").replace(/\D/g, "");
-      if (rowPhoneAdd.length === 9 && !rowPhoneAdd.startsWith("0")) rowPhoneAdd = "0" + rowPhoneAdd;
-      var rowLineIdAdd = String(rowsAdd[r][5] || "").trim();
+      var rowsAdd = sheet.getDataRange().getDisplayValues();
+      for (var r = 1; r < rowsAdd.length; r++) {
+        var rowPhoneAdd = String(rowsAdd[r][2] || "").replace(/\D/g, "");
+        if (rowPhoneAdd.length === 9 && !rowPhoneAdd.startsWith("0")) rowPhoneAdd = "0" + rowPhoneAdd;
+        var rowLineIdAdd = String(rowsAdd[r][5] || "").trim();
 
-      if ((cleanPhone !== "" && rowPhoneAdd === cleanPhone) || (lineUserId !== "" && rowLineIdAdd === lineUserId)) {
-        return responseJSON({ status: "duplicate", message: "เบอร์โทรศัพท์หรือบัญชี LINE นี้เป็นสมาชิกอยู่แล้วค่ะ" });
+        if ((cleanPhone !== "" && rowPhoneAdd === cleanPhone) || (lineUserId !== "" && rowLineIdAdd === lineUserId)) {
+          return responseJSON({ status: "duplicate", message: "เบอร์โทรศัพท์หรือบัญชี LINE นี้เป็นสมาชิกอยู่แล้วค่ะ" });
+        }
       }
+
+      var newId = String(data.id || new Date().getTime().toString()).trim();
+      var name = String(data.name || "").trim();
+      var phoneFormatted = cleanPhone ? "'" + cleanPhone : "";
+      var points = (data.points !== undefined && data.points !== null) ? Number(data.points) : 0;
+      var createdAt = Utilities.formatDate(new Date(), "Asia/Bangkok", "dd/MM/yyyy HH:mm:ss");
+
+      sheet.appendRow([newId, name, phoneFormatted, points, createdAt, lineUserId]);
+
+      if (lineUserId && LINE_ACCESS_TOKEN) {
+        sendWelcomeMessage(lineUserId, name);
+      }
+
+      return responseJSON({ status: "success", message: "บันทึกสมาชิกเรียบร้อย" });
     }
 
-    var newId = String(data.id || new Date().getTime().toString()).trim();
-    var name = String(data.name || "").trim();
-    var phoneFormatted = cleanPhone ? "'" + cleanPhone : "";
-    var points = (data.points !== undefined && data.points !== null) ? Number(data.points) : 0;
-    var createdAt = Utilities.formatDate(new Date(), "Asia/Bangkok", "dd/MM/yyyy HH:mm:ss");
-
-    sheet.appendRow([newId, name, phoneFormatted, points, createdAt, lineUserId]);
-
-    if (lineUserId && LINE_ACCESS_TOKEN) {
-      sendWelcomeMessage(lineUserId, name);
-    }
-
-    return responseJSON({ status: "success", message: "บันทึกสมาชิกเรียบร้อย" });
+    return responseJSON({ status: "error", message: "ไม่พบคำสั่ง (Action) ที่ระบุ: " + action });
 
   } catch (err) {
     return responseJSON({ status: "error", message: err.toString() });
   }
 }
 
-// ===================================================
-// 3. Helper Functions (ฟังก์ชันช่วยเหลือ)
-// ===================================================
-
-// ฟังก์ชันส่ง Response เป็น JSON
-function responseJSON(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+// Helper: ดึงแท็บ หรือสร้างแท็บพร้อมหัวตารางหากยังไม่มี
+function getOrCreateSheet(ss, sheetName, defaultHeaders) {
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+    if (defaultHeaders && defaultHeaders.length > 0) {
+      sheet.appendRow(defaultHeaders);
+    }
+  }
+  return sheet;
 }
 
 // ฟังก์ชันส่งข้อความต้อนรับผ่าน LINE Push Message
@@ -422,11 +405,7 @@ function sendWelcomeMessage(lineUserId, name) {
 function processPrintPreOrder(payload) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName("PrintOrders");
-    if (!sheet) {
-      sheet = ss.insertSheet("PrintOrders");
-      sheet.appendRow(["OrderId", "Timestamp", "CustomerName", "Phone", "PickupTime", "PaperType", "PrintMode", "Sides", "Pages", "Copies", "TotalPrice", "FileUrl", "Status"]);
-    }
+    var sheet = getOrCreateSheet(ss, "PrintOrders", ["OrderId", "Timestamp", "CustomerName", "Phone", "PickupTime", "PaperType", "PrintMode", "Sides", "Pages", "Copies", "TotalPrice", "FileUrl", "Status"]);
 
     var folder;
     try {
@@ -449,11 +428,15 @@ function processPrintPreOrder(payload) {
     var fileUrl = "";
     if (payload.fileData) {
       var contentType = "application/pdf";
-      var base64Data = payload.fileData || "";
+      var base64Data = String(payload.fileData || "");
+      
       if (base64Data.indexOf(";") > -1 && base64Data.indexOf(",") > -1) {
         contentType = base64Data.substring(5, base64Data.indexOf(';'));
         base64Data = base64Data.substring(base64Data.indexOf('base64,') + 7);
       }
+      
+      // ลบ whitespace และแปลง space กลับเป็น +
+      base64Data = base64Data.replace(/ /g, "+").replace(/[\r\n]/g, "");
 
       var decodedBlob = Utilities.newBlob(Utilities.base64Decode(base64Data), contentType, payload.fileName || "document.pdf");
       var file = folder.createFile(decodedBlob);

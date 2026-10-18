@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KORO STORE - ฝากพิมพ์งานล่วงหน้า</title>
+  <title>KORO STORE - ฝากพิมพ์ / ถ่ายเอกสาร</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-100 p-4 font-sans text-gray-800">
   <div class="max-w-md mx-auto bg-white rounded-3xl p-6 shadow-xl border space-y-4">
     <div class="text-center border-b pb-3">
-      <h2 class="text-xl font-black text-indigo-900">📑 ฝากพิมพ์เอกสาร KORO STORE</h2>
-      <p class="text-xs text-gray-500">ส่งไฟล์ล่วงหน้า มารับเอกสารหน้าร้านได้เลยไม่ต้องรอคิว</p>
+      <h2 class="text-xl font-black text-indigo-900">📑 ฝากพิมพ์ / ถ่ายเอกสาร KORO STORE</h2>
+      <p class="text-xs text-gray-500">ส่งไฟล์ล่วงหน้า มารับเอกสารหน้าร้านได้เลยไม่ต้องรอคิว (ขนาด A4)</p>
     </div>
 
     <form id="print-form" onsubmit="submitPrintOrder(event)" class="space-y-3 text-xs">
@@ -27,21 +27,21 @@
         <input type="file" id="file-input" accept=".pdf,image/*" required class="w-full text-xs file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-700 font-semibold hover:file:bg-indigo-100">
       </div>
 
-      <div class="grid grid-cols-2 gap-2">
-        <div>
-          <label class="font-bold text-gray-700 block mb-1">สีการพิมพ์</label>
-          <select id="print-mode" onchange="calcPrice()" class="w-full p-2.5 border rounded-xl bg-gray-50 font-semibold">
-            <option value="bw">ขาว-ดำ (หน้าละ 1.50 ฿)</option>
-            <option value="color">สี (หน้าละ 5.00 ฿)</option>
-          </select>
-        </div>
-        <div>
-          <label class="font-bold text-gray-700 block mb-1">การพิมพ์หน้า-หลัง</label>
-          <select id="print-sides" onchange="calcPrice()" class="w-full p-2.5 border rounded-xl bg-gray-50">
-            <option value="single">หน้าเดียว</option>
-            <option value="double">หน้า-หลัง</option>
-          </select>
-        </div>
+      <!-- เลือกประเภทบริการ / รูปแบบการพิมพ์ -->
+      <div>
+        <label class="font-bold text-gray-700 block mb-1">ประเภทบริการ & รูปแบบการพิมพ์ (A4)</label>
+        <select id="service-option" onchange="calcPrice()" class="w-full p-2.5 border rounded-xl bg-gray-50 font-semibold text-xs text-gray-800">
+          <optgroup label="🖨️ ปริ้นเอกสาร (A4)">
+            <option value="print_bw_single">ปริ้น ขาว-ดำ (หน้าเดียว) — 3 ฿/แผ่น (โปร 4 แผ่น 10 ฿)</option>
+            <option value="print_bw_double">ปริ้น ขาว-ดำ (หน้า-หลัง) — 4 ฿/แผ่น (โปร 4 แผ่น 15 ฿)</option>
+            <option value="print_color_single">ปริ้น สี (หน้าเดียว) — 5 ฿/แผ่น *</option>
+            <option value="print_color_double">ปริ้น สี (หน้า-หลัง) — 8 ฿/แผ่น *</option>
+          </optgroup>
+          <optgroup label="📄 ถ่ายเอกสาร (A4)">
+            <option value="copy_bw_single">ถ่ายเอกสาร ขาว-ดำ — 2 ฿/แผ่น</option>
+            <option value="copy_color_single">ถ่ายเอกสาร สี — 4 ฿/แผ่น (โปร 3 แผ่น 10 ฿) *</option>
+          </optgroup>
+        </select>
       </div>
 
       <div class="grid grid-cols-2 gap-2">
@@ -55,31 +55,70 @@
         </div>
       </div>
 
+      <!-- หมายเหตุราคาสี -->
+      <div class="text-[10px] text-amber-600 bg-amber-50 p-2 rounded-xl border border-amber-200">
+        * หมายเหตุ: งานพิมพ์สี ราคาประเมินอาจมีการพิจารณาปรับตามปริมาณสีจริงของเอกสารหน้าร้าน
+      </div>
+
       <!-- สรุปราคาสั่งพิมพ์ -->
       <div class="bg-indigo-50/80 p-3 rounded-2xl border border-indigo-200 flex justify-between items-center text-indigo-900 mt-2">
         <span class="font-bold text-sm">ประเมินราคาขาย:</span>
-        <span id="est-price" class="text-xl font-black text-indigo-700">1.50 ฿</span>
+        <span id="est-price" class="text-xl font-black text-indigo-700">3.00 ฿</span>
       </div>
 
       <button type="submit" id="btn-submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-2xl transition active:scale-95 text-sm shadow-md">
-        🚀 ส่งฝากพิมพ์งาน
+        🚀 ส่งฝากพิมพ์ / ถ่ายเอกสาร
       </button>
     </form>
   </div>
 
   <script>
-    // 🔗 นำ Web App URL ของ Google Apps Script มาใส่ตรงนี้
-    const APPS_SCRIPT_URL = "นำ_WEB_APP_URL_จาก_GOOGLE_APPS_SCRIPT_มาวางตรงนี้";
+    // 🔗 URL Google Apps Script Web App
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxFNLFRGk6InxObu-_zJcSbBnTRpvk7waJGTjyrnaaZ7i7_XwMzCcWAvG1h4IWkkT9gQ/exec";
 
-    let calculatedTotal = 1.5;
+    let calculatedTotal = 3.00;
 
     function calcPrice() {
-      const mode = document.getElementById('print-mode').value;
+      const opt = document.getElementById('service-option').value;
       const pages = parseInt(document.getElementById('num-pages').value) || 1;
       const copies = parseInt(document.getElementById('num-copies').value) || 1;
-      const ratePerPage = mode === 'bw' ? 1.5 : 5.0;
       
-      calculatedTotal = ratePerPage * pages * copies;
+      let pricePerCopy = 0;
+
+      if (opt === 'print_bw_single') {
+        // ปริ้นหน้าเดียว ขาวดำ: แผ่นละ 3 บาท (4 แผ่น 10 บาท)
+        const sets = Math.floor(pages / 4);
+        const rem = pages % 4;
+        pricePerCopy = (sets * 10) + (rem * 3);
+      } 
+      else if (opt === 'print_bw_double') {
+        // ปริ้นหน้าหลัง ขาวดำ: แผ่นละ 4 บาท (4 แผ่น 15 บาท) [คำนวณตามจำนวนแผ่นกระดาษ = ceil(pages/2)]
+        const sheets = Math.ceil(pages / 2);
+        const sets = Math.floor(sheets / 4);
+        const rem = sheets % 4;
+        pricePerCopy = (sets * 15) + (rem * 4);
+      } 
+      else if (opt === 'print_color_single') {
+        // ปริ้นหน้าเดียว สี: แผ่นละ 5 บาท
+        pricePerCopy = pages * 5;
+      } 
+      else if (opt === 'print_color_double') {
+        // ปริ้นหน้าหลัง สี: แผ่นละ 8 บาท [กระดาษ = ceil(pages/2)]
+        const sheets = Math.ceil(pages / 2);
+        pricePerCopy = sheets * 8;
+      } 
+      else if (opt === 'copy_bw_single') {
+        // ถ่ายเอกสาร ขาวดำ: แผ่นละ 2 บาท
+        pricePerCopy = pages * 2;
+      } 
+      else if (opt === 'copy_color_single') {
+        // ถ่ายเอกสาร สี: แผ่นละ 4 บาท (3 แผ่น 10 บาท)
+        const sets = Math.floor(pages / 3);
+        const rem = pages % 3;
+        pricePerCopy = (sets * 10) + (rem * 4);
+      }
+
+      calculatedTotal = pricePerCopy * copies;
       document.getElementById('est-price').innerText = calculatedTotal.toFixed(2) + ' ฿';
     }
 
@@ -97,6 +136,14 @@
       btn.disabled = true;
       btn.innerText = "⏳ กำลังอัปโหลดไฟล์...";
 
+      const opt = document.getElementById('service-option').value;
+      let modeText = "ขาว-ดำ";
+      let sidesText = "หน้าเดียว";
+
+      if (opt.includes("color")) modeText = "สี";
+      if (opt.includes("double")) sidesText = "หน้า-หลัง";
+      if (opt.startsWith("copy")) modeText = "ถ่ายเอกสาร " + modeText;
+
       const file = fileInput.files[0];
       const reader = new FileReader();
 
@@ -108,8 +155,8 @@
           fileName: file.name,
           fileData: evt.target.result,
           paperSize: "A4",
-          printMode: document.getElementById('print-mode').value === 'bw' ? 'ขาว-ดำ' : 'สี',
-          printSides: document.getElementById('print-sides').value === 'single' ? 'หน้าเดียว' : 'หน้า-หลัง',
+          printMode: modeText,
+          printSides: sidesText,
           pages: parseInt(document.getElementById('num-pages').value),
           copies: parseInt(document.getElementById('num-copies').value),
           totalPrice: calculatedTotal
@@ -122,23 +169,28 @@
         .then(res => res.json())
         .then(res => {
           if (res.success) {
-            alert(`🎉 ฝากพิมพ์งานสำเร็จ!\nรหัสออเดอร์: ${res.orderId}\nแจ้งรหัสนี้กับพนักงานเมื่อมารับเอกสารหน้าร้าน`);
+            alert(`🎉 ฝากพิมพ์/ถ่ายเอกสารสำเร็จ!\nรหัสออเดอร์: ${res.orderId}\nแจ้งรหัสนี้กับพนักงานเมื่อมารับเอกสารหน้าร้าน`);
             location.reload();
           } else {
             alert("เกิดข้อผิดพลาด: " + (res.error || "ไม่สามารถส่งข้อมูลได้"));
             btn.disabled = false;
-            btn.innerText = "🚀 ส่งฝากพิมพ์งาน";
+            btn.innerText = "🚀 ส่งฝากพิมพ์ / ถ่ายเอกสาร";
           }
         })
         .catch(err => {
           alert("เกิดข้อผิดพลาดในการเชื่อมต่อ: " + err.message);
           btn.disabled = false;
-          btn.innerText = "🚀 ส่งฝากพิมพ์งาน";
+          btn.innerText = "🚀 ส่งฝากพิมพ์ / ถ่ายเอกสาร";
         });
       };
 
       reader.readAsDataURL(file);
     }
+
+    // คำนวณราคาเริ่มต้นทันทีเมื่อโหลดหน้าเว็บ
+    window.onload = function() {
+      calcPrice();
+    };
   </script>
 </body>
 </html>

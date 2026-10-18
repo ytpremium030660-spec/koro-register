@@ -22,9 +22,10 @@
         </div>
       </div>
 
+      <!-- ⏰ ช่องเวลานัดรับเอกสาร -->
       <div>
-        <label class="font-bold text-gray-700 block mb-1">แนบไฟล์เอกสาร (PDF หรือ รูปภาพ) *</label>
-        <input type="file" id="file-input" accept=".pdf,image/*" required class="w-full text-xs file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-700 font-semibold hover:file:bg-indigo-100">
+        <label class="font-bold text-gray-700 block mb-1">⏰ เวลาที่สะดวกมารับเอกสาร *</label>
+        <input type="time" id="pickup-time" required class="w-full p-2.5 border rounded-xl bg-gray-50 font-semibold text-gray-800">
       </div>
 
       <!-- เลือกประเภทบริการ / รูปแบบการพิมพ์ -->
@@ -42,6 +43,11 @@
             <option value="copy_color_single">ถ่ายเอกสาร สี — 4 ฿/แผ่น (โปร 3 แผ่น 10 ฿) *</option>
           </optgroup>
         </select>
+      </div>
+
+      <div>
+        <label class="font-bold text-gray-700 block mb-1">แนบไฟล์เอกสาร (PDF หรือ รูปภาพ) *</label>
+        <input type="file" id="file-input" accept=".pdf,image/*" required class="w-full text-xs file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-700 font-semibold hover:file:bg-indigo-100">
       </div>
 
       <div class="grid grid-cols-2 gap-2">
@@ -74,7 +80,7 @@
 
   <script>
     // 🔗 URL Google Apps Script Web App
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxFNLFRGk6InxObu-_zJcSbBnTRpvk7waJGTjyrnaaZ7i7_XwMzCcWAvG1h4IWkkT9gQ/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzMcQ9mzq-49At5nD0B0CmpiUN9hjpfQbDPaPeojCM02DwZXea7-F6GEX3_R06dbNa81w/exec";
 
     let calculatedTotal = 3.00;
 
@@ -86,33 +92,27 @@
       let pricePerCopy = 0;
 
       if (opt === 'print_bw_single') {
-        // ปริ้นหน้าเดียว ขาวดำ: แผ่นละ 3 บาท (4 แผ่น 10 บาท)
         const sets = Math.floor(pages / 4);
         const rem = pages % 4;
         pricePerCopy = (sets * 10) + (rem * 3);
       } 
       else if (opt === 'print_bw_double') {
-        // ปริ้นหน้าหลัง ขาวดำ: แผ่นละ 4 บาท (4 แผ่น 15 บาท) [คำนวณตามจำนวนแผ่นกระดาษ = ceil(pages/2)]
         const sheets = Math.ceil(pages / 2);
         const sets = Math.floor(sheets / 4);
         const rem = sheets % 4;
         pricePerCopy = (sets * 15) + (rem * 4);
       } 
       else if (opt === 'print_color_single') {
-        // ปริ้นหน้าเดียว สี: แผ่นละ 5 บาท
         pricePerCopy = pages * 5;
       } 
       else if (opt === 'print_color_double') {
-        // ปริ้นหน้าหลัง สี: แผ่นละ 8 บาท [กระดาษ = ceil(pages/2)]
         const sheets = Math.ceil(pages / 2);
         pricePerCopy = sheets * 8;
       } 
       else if (opt === 'copy_bw_single') {
-        // ถ่ายเอกสาร ขาวดำ: แผ่นละ 2 บาท
         pricePerCopy = pages * 2;
       } 
       else if (opt === 'copy_color_single') {
-        // ถ่ายเอกสาร สี: แผ่นละ 4 บาท (3 แผ่น 10 บาท)
         const sets = Math.floor(pages / 3);
         const rem = pages % 3;
         pricePerCopy = (sets * 10) + (rem * 4);
@@ -152,6 +152,7 @@
           action: "processPrintPreOrder",
           customerName: document.getElementById('cust-name').value,
           phone: document.getElementById('cust-phone').value,
+          pickupTime: document.getElementById('pickup-time').value, // ⏰ ส่งเวลาที่มารับ
           fileName: file.name,
           fileData: evt.target.result,
           paperSize: "A4",
@@ -164,15 +165,16 @@
 
         fetch(APPS_SCRIPT_URL, {
           method: 'POST',
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(payload)
         })
         .then(res => res.json())
         .then(res => {
-          if (res.success) {
-            alert(`🎉 ฝากพิมพ์/ถ่ายเอกสารสำเร็จ!\nรหัสออเดอร์: ${res.orderId}\nแจ้งรหัสนี้กับพนักงานเมื่อมารับเอกสารหน้าร้าน`);
+          if (res.success || res.status === "success") {
+            alert(`🎉 ฝากพิมพ์/ถ่ายเอกสารสำเร็จ!\nรหัสออเดอร์: ${res.orderId}\nเวลานัดรับ: ${payload.pickupTime} น.\nแจ้งรหัสนี้กับพนักงานเมื่อมารับเอกสารหน้าร้าน`);
             location.reload();
           } else {
-            alert("เกิดข้อผิดพลาด: " + (res.error || "ไม่สามารถส่งข้อมูลได้"));
+            alert("เกิดข้อผิดพลาด: " + (res.error || res.message || "ไม่สามารถส่งข้อมูลได้"));
             btn.disabled = false;
             btn.innerText = "🚀 ส่งฝากพิมพ์ / ถ่ายเอกสาร";
           }
@@ -187,7 +189,6 @@
       reader.readAsDataURL(file);
     }
 
-    // คำนวณราคาเริ่มต้นทันทีเมื่อโหลดหน้าเว็บ
     window.onload = function() {
       calcPrice();
     };

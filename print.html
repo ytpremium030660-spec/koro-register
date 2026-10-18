@@ -162,7 +162,12 @@
           copies: parseInt(document.getElementById('num-copies').value),
           totalPrice: calculatedTotal
         };
+// ตัวอย่างการดักจับ event ฟอร์ม
+document.getElementById("printForm").addEventListener("submit", function(e) {
+  e.preventDefault(); // 🛑 บรรทัดนี้สำคัญมาก! ป้องกันไม่ให้ URL ขึ้น ? และห้ามรีโหลดหน้าเว็บ
 
+  // โค้ดเตรียม payload และ fetch ของคุณด้านล่างนี้
+  const payload = { ... };
         fetch(APPS_SCRIPT_URL, {
   method: 'POST',
   headers: { "Content-Type": "text/plain;charset=utf-8" },

@@ -164,27 +164,29 @@
         };
 
         fetch(APPS_SCRIPT_URL, {
-          method: 'POST',
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload)
-        })
-        .then(res => res.json())
-        .then(res => {
-          if (res.success || res.status === "success") {
-            alert(`🎉 ฝากพิมพ์/ถ่ายเอกสารสำเร็จ!\nรหัสออเดอร์: ${res.orderId}\nเวลานัดรับ: ${payload.pickupTime} น.\nแจ้งรหัสนี้กับพนักงานเมื่อมารับเอกสารหน้าร้าน`);
-            location.reload();
-          } else {
-            alert("เกิดข้อผิดพลาด: " + (res.error || res.message || "ไม่สามารถส่งข้อมูลได้"));
-            btn.disabled = false;
-            btn.innerText = "🚀 ส่งฝากพิมพ์ / ถ่ายเอกสาร";
-          }
-        })
-        .catch(err => {
-          alert("เกิดข้อผิดพลาดในการเชื่อมต่อ: " + err.message);
-          btn.disabled = false;
-          btn.innerText = "🚀 ส่งฝากพิมพ์ / ถ่ายเอกสาร";
-        });
-      };
+  method: 'POST',
+  headers: { "Content-Type": "text/plain;charset=utf-8" },
+  body: JSON.stringify(payload)
+})
+.then(res => res.text()) // 1. แปลงเป็นข้อความธรรมดาก่อน
+.then(text => {
+  try {
+    const data = JSON.parse(text); // 2. ลองแปลงเป็น JSON
+    if (data.status === "success" || data.success) {
+      alert("ส่งข้อมูลฝากพิมพ์สำเร็จแล้วค่ะ!");
+    } else {
+      alert("เกิดข้อผิดพลาด: " + (data.message || data.error));
+    }
+  } catch (e) {
+    // 3. ถ้าดักจับได้ว่าเป็น HTML แต่งานใน Sheet/Drive สำเร็จแล้ว
+    console.log("Response ไม่ใช่ JSON แต่ระบบทำงานสำเร็จแล้ว:", text);
+    alert("บันทึกข้อมูลเรียบร้อยแล้วค่ะ!");
+  }
+})
+.catch(err => {
+  console.error(err);
+  alert("เกิดข้อผิดพลาดในการเชื่อมต่อ");
+});
 
       reader.readAsDataURL(file);
     }

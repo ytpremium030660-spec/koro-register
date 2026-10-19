@@ -50,23 +50,14 @@
         </div>
       </div>
 
-      <!-- ⏰ เวลาที่สะดวกมารับเอกสาร (รูปแบบ 24 ชั่วโมง 00:00 - 23:59) -->
+      <!-- ⏰ ช่องเลือกเวลานัดรับเอกสาร (ช่องเดียว แบบ 24 ชม. 00:00 - 23:45 น.) -->
       <div>
         <label class="font-bold text-slate-700 block mb-1 text-xs flex items-center gap-1">
-          <span>⏰</span> เวลาที่สะดวกมารับเอกสาร (24 ชม.) <span class="text-rose-500">*</span>
+          <span>⏰</span> เวลาที่สะดวกมารับเอกสาร <span class="text-rose-500">*</span>
         </label>
-        <div class="grid grid-cols-2 gap-2">
-          <div class="flex items-center gap-1">
-            <select id="pickup-hour" class="w-full p-2.5 border-2 border-pink-100 rounded-2xl bg-pink-50/30 focus:bg-white focus:border-pink-400 focus:outline-none transition font-bold text-slate-800 cursor-pointer">
-              <!-- ชั่วโมง 00 - 23 -->
-            </select>
-          </div>
-          <div class="flex items-center gap-1">
-            <select id="pickup-minute" class="w-full p-2.5 border-2 border-pink-100 rounded-2xl bg-pink-50/30 focus:bg-white focus:border-pink-400 focus:outline-none transition font-bold text-slate-800 cursor-pointer">
-              <!-- นาที 00 - 55 -->
-            </select>
-          </div>
-        </div>
+        <select id="pickup-time" required class="w-full p-2.5 border-2 border-pink-100 rounded-2xl bg-pink-50/30 focus:bg-white focus:border-pink-400 focus:outline-none transition font-bold text-slate-800 cursor-pointer">
+          <!-- สร้างช่วงเวลา 24 ชม. อัตโนมัติด้วย JavaScript -->
+        </select>
       </div>
 
       <!-- เลือกประเภทบริการ / รูปแบบการพิมพ์ -->
@@ -133,7 +124,6 @@
   <div id="success-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 transition-all duration-300">
     <div class="bg-white rounded-[2.5rem] max-w-sm w-full p-6 text-center shadow-2xl border-4 border-pink-200 relative transform transition-all scale-95 animate-bounce-short">
       
-      <!-- Icon Badge -->
       <div class="w-16 h-16 bg-pink-100 text-pink-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-3 shadow-inner border-2 border-pink-200">
         🎉
       </div>
@@ -141,7 +131,6 @@
       <h3 class="text-lg font-black text-slate-800 mb-1">ฝากพิมพ์เอกสารสำเร็จ!</h3>
       <p class="text-xs text-slate-500 mb-4">ขอบคุณที่ใช้บริการ KORO STORE ค่ะ 🐾</p>
 
-      <!-- Details Card -->
       <div class="bg-pink-50/60 rounded-2xl p-4 border border-pink-100 space-y-2 text-xs text-left mb-5">
         <div class="flex justify-between items-center border-b border-pink-100 pb-2">
           <span class="text-slate-500 font-medium">รหัสออเดอร์:</span>
@@ -188,28 +177,35 @@
 
     let calculatedTotal = 3.00;
 
-    // ⏰ ฟังก์ชันสร้างตัวเลือกเวลา 24 ชั่วโมง (00:00 - 23:55 น.)
+    // ⏰ ฟังก์ชันสร้างช่วงเวลา 24 ชั่วโมงในช่องเดียว (00:00 - 23:45 น. ทุกๆ 15 นาที)
     function initTimePicker() {
-      const hourSelect = document.getElementById('pickup-hour');
-      const minuteSelect = document.getElementById('pickup-minute');
+      const timeSelect = document.getElementById('pickup-time');
+      timeSelect.innerHTML = '';
 
       const now = new Date();
-      const currentHour = String(now.getHours()).padStart(2, '0');
-      // ปัดนาทีปัจจุบันไปที่ช่วง 5 นาทีถัดไป
-      const currentMinute = String(Math.ceil(now.getMinutes() / 5) * 5 % 60).padStart(2, '0');
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
 
-      hourSelect.innerHTML = '';
-      for (let h = 0; h < 24; h++) {
-        const hh = String(h).padStart(2, '0');
-        const selected = (hh === currentHour) ? 'selected' : '';
-        hourSelect.innerHTML += `<option value="${hh}" ${selected}>${hh} น.</option>`;
+      // หาช่วงเวลา 15 นาทีถัดไป
+      let roundedMin = Math.ceil(currentMinute / 15) * 15;
+      let defaultH = currentHour;
+      if (roundedMin >= 60) {
+        roundedMin = 0;
+        defaultH = (defaultH + 1) % 24;
       }
+      const defaultVal = `${String(defaultH).padStart(2, '0')}:${String(roundedMin).padStart(2, '0')}`;
 
-      minuteSelect.innerHTML = '';
-      for (let m = 0; m < 60; m += 5) {
-        const mm = String(m).padStart(2, '0');
-        const selected = (mm === currentMinute) ? 'selected' : '';
-        minuteSelect.innerHTML += `<option value="${mm}" ${selected}>${mm} นาที</option>`;
+      // วนลูปสร้างเวลา 00:00 น. ถึง 23:45 น.
+      for (let h = 0; h < 24; h++) {
+        for (let m = 0; m < 60; m += 15) {
+          const hh = String(h).padStart(2, '0');
+          const mm = String(m).padStart(2, '0');
+          const timeVal = `${hh}:${mm}`;
+          const timeText = `${hh}:${mm} น.`;
+          const selected = (timeVal === defaultVal) ? 'selected' : '';
+          
+          timeSelect.innerHTML += `<option value="${timeVal}" ${selected}>${timeText}</option>`;
+        }
       }
     }
 
@@ -265,10 +261,7 @@
       btn.disabled = true;
       btn.innerHTML = `<span>⏳</span> กำลังอัปโหลดไฟล์...`;
 
-      // ⏰ รวมเวลาแบบ 24 ชั่วโมง (เช่น 15:30)
-      const selectedHour = document.getElementById('pickup-hour').value;
-      const selectedMinute = document.getElementById('pickup-minute').value;
-      const pickupTimeFormatted = `${selectedHour}:${selectedMinute}`;
+      const pickupTimeVal = document.getElementById('pickup-time').value;
 
       const opt = document.getElementById('service-option').value;
       let modeText = "ขาว-ดำ";
@@ -286,7 +279,7 @@
           action: "processPrintPreOrder",
           customerName: document.getElementById('cust-name').value,
           phone: document.getElementById('cust-phone').value,
-          pickupTime: pickupTimeFormatted, // ⏰ ส่งเวลาแบบ 24 ชม.
+          pickupTime: pickupTimeVal, // ส่งเวลาแบบ 24 ชม. (เช่น 10:45)
           fileName: file.name,
           fileData: evt.target.result,
           paperSize: "A4",
@@ -351,7 +344,7 @@
     }
 
     window.onload = function() {
-      initTimePicker(); // สร้างตัวเลือกเวลา 24 ชม. และเลือกเวลาปัจจุบันให้ทันที
+      initTimePicker(); // สร้างตัวเลือกเวลาในช่องเดียวแบบ 24 ชม.
       calcPrice();
     };
   </script>

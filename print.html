@@ -21,7 +21,7 @@
   <!-- Main Container -->
   <div class="w-full max-w-md bg-white/90 backdrop-blur-md rounded-[2.5rem] p-6 shadow-2xl border-4 border-pink-200/80 space-y-4 relative overflow-hidden">
     
-    <!-- Decorative Mascot Circles -->
+    <!-- Decorative Elements -->
     <div class="absolute -top-10 -right-10 w-28 h-28 bg-pink-200/50 rounded-full blur-xl pointer-events-none"></div>
     <div class="absolute -bottom-10 -left-10 w-28 h-28 bg-indigo-200/50 rounded-full blur-xl pointer-events-none"></div>
 
@@ -50,12 +50,23 @@
         </div>
       </div>
 
-      <!-- เวลาที่สะดวกมารับเอกสาร -->
+      <!-- ⏰ เวลาที่สะดวกมารับเอกสาร (รูปแบบ 24 ชั่วโมง 00:00 - 23:59) -->
       <div>
         <label class="font-bold text-slate-700 block mb-1 text-xs flex items-center gap-1">
-          <span>⏰</span> เวลาที่สะดวกมารับเอกสาร <span class="text-rose-500">*</span>
+          <span>⏰</span> เวลาที่สะดวกมารับเอกสาร (24 ชม.) <span class="text-rose-500">*</span>
         </label>
-        <input type="time" id="pickup-time" required class="w-full p-2.5 border-2 border-pink-100 rounded-2xl bg-pink-50/30 focus:bg-white focus:border-pink-400 focus:outline-none transition font-bold text-slate-800">
+        <div class="grid grid-cols-2 gap-2">
+          <div class="flex items-center gap-1">
+            <select id="pickup-hour" class="w-full p-2.5 border-2 border-pink-100 rounded-2xl bg-pink-50/30 focus:bg-white focus:border-pink-400 focus:outline-none transition font-bold text-slate-800 cursor-pointer">
+              <!-- ชั่วโมง 00 - 23 -->
+            </select>
+          </div>
+          <div class="flex items-center gap-1">
+            <select id="pickup-minute" class="w-full p-2.5 border-2 border-pink-100 rounded-2xl bg-pink-50/30 focus:bg-white focus:border-pink-400 focus:outline-none transition font-bold text-slate-800 cursor-pointer">
+              <!-- นาที 00 - 55 -->
+            </select>
+          </div>
+        </div>
       </div>
 
       <!-- เลือกประเภทบริการ / รูปแบบการพิมพ์ -->
@@ -177,6 +188,31 @@
 
     let calculatedTotal = 3.00;
 
+    // ⏰ ฟังก์ชันสร้างตัวเลือกเวลา 24 ชั่วโมง (00:00 - 23:55 น.)
+    function initTimePicker() {
+      const hourSelect = document.getElementById('pickup-hour');
+      const minuteSelect = document.getElementById('pickup-minute');
+
+      const now = new Date();
+      const currentHour = String(now.getHours()).padStart(2, '0');
+      // ปัดนาทีปัจจุบันไปที่ช่วง 5 นาทีถัดไป
+      const currentMinute = String(Math.ceil(now.getMinutes() / 5) * 5 % 60).padStart(2, '0');
+
+      hourSelect.innerHTML = '';
+      for (let h = 0; h < 24; h++) {
+        const hh = String(h).padStart(2, '0');
+        const selected = (hh === currentHour) ? 'selected' : '';
+        hourSelect.innerHTML += `<option value="${hh}" ${selected}>${hh} น.</option>`;
+      }
+
+      minuteSelect.innerHTML = '';
+      for (let m = 0; m < 60; m += 5) {
+        const mm = String(m).padStart(2, '0');
+        const selected = (mm === currentMinute) ? 'selected' : '';
+        minuteSelect.innerHTML += `<option value="${mm}" ${selected}>${mm} นาที</option>`;
+      }
+    }
+
     function calcPrice() {
       const opt = document.getElementById('service-option').value;
       const pages = parseInt(document.getElementById('num-pages').value) || 1;
@@ -229,6 +265,11 @@
       btn.disabled = true;
       btn.innerHTML = `<span>⏳</span> กำลังอัปโหลดไฟล์...`;
 
+      // ⏰ รวมเวลาแบบ 24 ชั่วโมง (เช่น 15:30)
+      const selectedHour = document.getElementById('pickup-hour').value;
+      const selectedMinute = document.getElementById('pickup-minute').value;
+      const pickupTimeFormatted = `${selectedHour}:${selectedMinute}`;
+
       const opt = document.getElementById('service-option').value;
       let modeText = "ขาว-ดำ";
       let sidesText = "หน้าเดียว";
@@ -245,7 +286,7 @@
           action: "processPrintPreOrder",
           customerName: document.getElementById('cust-name').value,
           phone: document.getElementById('cust-phone').value,
-          pickupTime: document.getElementById('pickup-time').value,
+          pickupTime: pickupTimeFormatted, // ⏰ ส่งเวลาแบบ 24 ชม.
           fileName: file.name,
           fileData: evt.target.result,
           paperSize: "A4",
@@ -310,6 +351,7 @@
     }
 
     window.onload = function() {
+      initTimePicker(); // สร้างตัวเลือกเวลา 24 ชม. และเลือกเวลาปัจจุบันให้ทันที
       calcPrice();
     };
   </script>

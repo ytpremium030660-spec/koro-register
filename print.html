@@ -50,13 +50,12 @@
         </div>
       </div>
 
-      <!-- ⏰ ช่องเลือกเวลานัดรับเอกสาร (ช่องเดียว แบบ 24 ชม. 00:00 - 23:45 น.) -->
+      <!-- ⏰ ช่องเลือกเวลานัดรับเอกสาร (24 ชม.) -->
       <div>
         <label class="font-bold text-slate-700 block mb-1 text-xs flex items-center gap-1">
           <span>⏰</span> เวลาที่สะดวกมารับเอกสาร <span class="text-rose-500">*</span>
         </label>
         <select id="pickup-time" required class="w-full p-2.5 border-2 border-pink-100 rounded-2xl bg-pink-50/30 focus:bg-white focus:border-pink-400 focus:outline-none transition font-bold text-slate-800 cursor-pointer">
-          <!-- สร้างช่วงเวลา 24 ชม. อัตโนมัติด้วย JavaScript -->
         </select>
       </div>
 
@@ -79,18 +78,27 @@
         </select>
       </div>
 
-      <!-- แนบไฟล์เอกสาร -->
+      <!-- แนบไฟล์เอกสาร (รองรับเลือกหลายไฟล์/หลายรูปพร้อมกัน) -->
       <div>
-        <label class="font-bold text-slate-700 block mb-1 text-xs flex items-center gap-1">
-          <span>📎</span> แนบไฟล์เอกสาร (PDF หรือ รูปภาพ) <span class="text-rose-500">*</span>
+        <label class="font-bold text-slate-700 block mb-1 text-xs flex items-center justify-between">
+          <span class="flex items-center gap-1"><span>📎</span> แนบไฟล์เอกสาร / รูปภาพ (เลือกได้หลายไฟล์) <span class="text-rose-500">*</span></span>
         </label>
-        <input type="file" id="file-input" accept=".pdf,image/*" required class="w-full text-xs file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-pink-100 file:text-pink-700 file:font-bold hover:file:bg-pink-200 transition cursor-pointer border-2 border-dashed border-pink-200 p-1.5 rounded-2xl bg-pink-50/20">
+        <input type="file" id="file-input" accept=".pdf,image/*" multiple required onchange="handleFileChange()" class="w-full text-xs file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-pink-100 file:text-pink-700 file:font-bold hover:file:bg-pink-200 transition cursor-pointer border-2 border-dashed border-pink-200 p-1.5 rounded-2xl bg-pink-50/20">
+        
+        <!-- กล่องพรีวิวรายการไฟล์ที่เลือก -->
+        <div id="file-preview-box" class="hidden mt-2 p-2.5 bg-pink-50/80 rounded-2xl border border-pink-200 max-h-32 overflow-y-auto space-y-1">
+          <div class="text-[10px] font-bold text-pink-600 mb-1 flex justify-between">
+            <span>📋 รายการไฟล์ที่เลือก:</span>
+            <span id="file-count-text">0 ไฟล์</span>
+          </div>
+          <ul id="file-list-items" class="space-y-1 text-[11px] text-slate-600 font-medium"></ul>
+        </div>
       </div>
 
       <!-- จำนวนหน้า & จำนวนชุด -->
       <div class="grid grid-cols-2 gap-2">
         <div>
-          <label class="font-bold text-slate-700 block mb-1 text-[11px]">จำนวนหน้าในไฟล์</label>
+          <label class="font-bold text-slate-700 block mb-1 text-[11px]">จำนวนหน้าในไฟล์ทั้งหมด</label>
           <input type="number" id="num-pages" min="1" value="1" onchange="calcPrice()" class="w-full p-2.5 border-2 border-pink-100 rounded-2xl bg-pink-50/30 text-center font-extrabold focus:border-pink-400 focus:outline-none">
         </div>
         <div>
@@ -173,11 +181,11 @@
 
   <script>
     // 🔗 URL Google Apps Script Web App
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzarscI44AyzRKow5AhJMTsmNLGJG-OjqXQNhZR5NVIFMVLrT-PfG0wPa5DIjgeO8rRJg/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxmrN535eNnQ9KJJ9whxAiyfjBcSMOxZmvTMMYBfnaoah00Ga68GyHgGXc-_9zMx0LBYg/exec";
 
     let calculatedTotal = 3.00;
 
-    // ⏰ ฟังก์ชันสร้างช่วงเวลา 24 ชั่วโมงในช่องเดียว (00:00 - 23:45 น. ทุกๆ 15 นาที)
+    // ⏰ ฟังก์ชันสร้างช่วงเวลา 24 ชั่วโมงในช่องเดียว (00:00 - 23:45 น.)
     function initTimePicker() {
       const timeSelect = document.getElementById('pickup-time');
       timeSelect.innerHTML = '';
@@ -186,7 +194,6 @@
       const currentHour = now.getHours();
       const currentMinute = now.getMinutes();
 
-      // หาช่วงเวลา 15 นาทีถัดไป
       let roundedMin = Math.ceil(currentMinute / 15) * 15;
       let defaultH = currentHour;
       if (roundedMin >= 60) {
@@ -195,7 +202,6 @@
       }
       const defaultVal = `${String(defaultH).padStart(2, '0')}:${String(roundedMin).padStart(2, '0')}`;
 
-      // วนลูปสร้างเวลา 00:00 น. ถึง 23:45 น.
       for (let h = 0; h < 24; h++) {
         for (let m = 0; m < 60; m += 15) {
           const hh = String(h).padStart(2, '0');
@@ -207,6 +213,39 @@
           timeSelect.innerHTML += `<option value="${timeVal}" ${selected}>${timeText}</option>`;
         }
       }
+    }
+
+    // 📋 ฟังก์ชันแสดงรายการไฟล์เมื่อเลือกไฟล์เพิ่ม
+    function handleFileChange() {
+      const fileInput = document.getElementById('file-input');
+      const previewBox = document.getElementById('file-preview-box');
+      const listItems = document.getElementById('file-list-items');
+      const countText = document.getElementById('file-count-text');
+
+      if (fileInput.files.length === 0) {
+        previewBox.classList.add('hidden');
+        return;
+      }
+
+      listItems.innerHTML = '';
+      const files = Array.from(fileInput.files);
+      
+      files.forEach((f, idx) => {
+        const sizeKB = (f.size / 1024).toFixed(0);
+        listItems.innerHTML += `
+          <li class="flex items-center justify-between bg-white px-2.5 py-1 rounded-xl border border-pink-100 shadow-sm">
+            <span class="truncate max-w-[200px]">📄 ${idx + 1}. ${f.name}</span>
+            <span class="text-[10px] text-slate-400 font-bold">${sizeKB} KB</span>
+          </li>
+        `;
+      });
+
+      countText.innerText = `${files.length} ไฟล์`;
+      previewBox.classList.remove('hidden');
+
+      // อัปเดตจำนวนหน้าให้อัตโนมัติตามจำนวนไฟล์ที่เลือก
+      document.getElementById('num-pages').value = files.length;
+      calcPrice();
     }
 
     function calcPrice() {
@@ -247,7 +286,20 @@
       document.getElementById('est-price').innerText = calculatedTotal.toFixed(2) + ' ฿';
     }
 
-    function submitPrintOrder(e) {
+    // ฟังก์ชันแปลงทุกไฟล์เป็น Base64 แบบขนาน
+    function readAllFilesAsBase64(files) {
+      const promises = Array.from(files).map(file => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = e => resolve({ fileName: file.name, fileData: e.target.result });
+          reader.onerror = err => reject(err);
+          reader.readAsDataURL(file);
+        });
+      });
+      return Promise.all(promises);
+    }
+
+    async function submitPrintOrder(e) {
       e.preventDefault();
       const fileInput = document.getElementById('file-input');
       if (fileInput.files.length === 0) return;
@@ -259,7 +311,7 @@
 
       const btn = document.getElementById('btn-submit');
       btn.disabled = true;
-      btn.innerHTML = `<span>⏳</span> กำลังอัปโหลดไฟล์...`;
+      btn.innerHTML = `<span>⏳</span> กำลังอัปโหลด ${fileInput.files.length} ไฟล์...`;
 
       const pickupTimeVal = document.getElementById('pickup-time').value;
 
@@ -271,17 +323,15 @@
       if (opt.includes("double")) sidesText = "หน้า-หลัง";
       if (opt.startsWith("copy")) modeText = "ถ่ายเอกสาร " + modeText;
 
-      const file = fileInput.files[0];
-      const reader = new FileReader();
+      try {
+        const fileItems = await readAllFilesAsBase64(fileInput.files);
 
-      reader.onload = function(evt) {
         const payload = {
           action: "processPrintPreOrder",
           customerName: document.getElementById('cust-name').value,
           phone: document.getElementById('cust-phone').value,
-          pickupTime: pickupTimeVal, // ส่งเวลาแบบ 24 ชม. (เช่น 10:45)
-          fileName: file.name,
-          fileData: evt.target.result,
+          pickupTime: pickupTimeVal,
+          files: fileItems, // ส่งอาเรย์รวมทุกไฟล์
           paperSize: "A4",
           printMode: modeText,
           printSides: sidesText,
@@ -290,29 +340,26 @@
           totalPrice: calculatedTotal
         };
 
-        fetch(APPS_SCRIPT_URL, {
+        const response = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(payload)
-        })
-        .then(res => res.json())
-        .then(res => {
-          if (res.success || res.status === "success") {
-            showSuccessModal(res.orderId || "PO-SUCCESS", payload.pickupTime);
-          } else {
-            showErrorModal("เกิดข้อผิดพลาด: " + (res.error || res.message || "ไม่สามารถส่งข้อมูลได้"));
-            btn.disabled = false;
-            btn.innerHTML = `<span>🚀</span> ส่งฝากพิมพ์ / ถ่ายเอกสาร`;
-          }
-        })
-        .catch(err => {
-          showErrorModal("เกิดข้อผิดพลาดในการเชื่อมต่อ: " + err.message);
+        });
+
+        const res = await response.json();
+
+        if (res.success || res.status === "success") {
+          showSuccessModal(res.orderId || "PO-SUCCESS", payload.pickupTime);
+        } else {
+          showErrorModal("เกิดข้อผิดพลาด: " + (res.error || res.message || "ไม่สามารถส่งข้อมูลได้"));
           btn.disabled = false;
           btn.innerHTML = `<span>🚀</span> ส่งฝากพิมพ์ / ถ่ายเอกสาร`;
-        });
-      };
-
-      reader.readAsDataURL(file);
+        }
+      } catch (err) {
+        showErrorModal("เกิดข้อผิดพลาดในการประมวลผลไฟล์: " + err.message);
+        btn.disabled = false;
+        btn.innerHTML = `<span>🚀</span> ส่งฝากพิมพ์ / ถ่ายเอกสาร`;
+      }
     }
 
     // Modal Helpers
@@ -344,7 +391,7 @@
     }
 
     window.onload = function() {
-      initTimePicker(); // สร้างตัวเลือกเวลาในช่องเดียวแบบ 24 ชม.
+      initTimePicker();
       calcPrice();
     };
   </script>

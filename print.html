@@ -4,34 +4,66 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>KORO STORE - ฝากพิมพ์ / ถ่ายเอกสาร</title>
+  <!-- Google Fonts: Prompt -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Prompt', sans-serif;
+    }
+  </style>
 </head>
-<body class="bg-slate-100 p-4 font-sans text-gray-800">
-  <div class="max-w-md mx-auto bg-white rounded-3xl p-6 shadow-xl border space-y-4">
-    <div class="text-center border-b pb-3">
-      <h2 class="text-xl font-black text-indigo-900">📑 ฝากพิมพ์ / ถ่ายเอกสาร KORO STORE</h2>
-      <p class="text-xs text-gray-500">ส่งไฟล์ล่วงหน้า มารับเอกสารหน้าร้านได้เลยไม่ต้องรอคิว (ขนาด A4)</p>
+<body class="bg-gradient-to-br from-pink-100 via-rose-50 to-indigo-100 min-h-screen p-4 flex items-center justify-center text-slate-700">
+
+  <!-- Main Container -->
+  <div class="w-full max-w-md bg-white/90 backdrop-blur-md rounded-[2.5rem] p-6 shadow-2xl border-4 border-pink-200/80 space-y-4 relative overflow-hidden">
+    
+    <!-- Decorative Mascot Circles -->
+    <div class="absolute -top-10 -right-10 w-28 h-28 bg-pink-200/50 rounded-full blur-xl pointer-events-none"></div>
+    <div class="absolute -bottom-10 -left-10 w-28 h-28 bg-indigo-200/50 rounded-full blur-xl pointer-events-none"></div>
+
+    <!-- Header -->
+    <div class="text-center border-b-2 border-dashed border-pink-200 pb-4 relative">
+      <div class="inline-flex items-center justify-center bg-pink-100 text-pink-600 px-3 py-1 rounded-full text-xs font-bold mb-1 shadow-sm">
+        🐾 KORO STORE 🛒✨
+      </div>
+      <h2 class="text-xl font-extrabold text-slate-800 flex items-center justify-center gap-1.5">
+        <span>📑</span> ฝากพิมพ์ / ถ่ายเอกสาร
+      </h2>
+      <p class="text-[11px] text-slate-500 mt-1 font-medium">ส่งไฟล์ล่วงหน้า มารับหน้าร้านได้เลย ไม่ต้องรอคิว (ขนาด A4)</p>
     </div>
 
-    <form id="print-form" onsubmit="submitPrintOrder(event)" class="space-y-3 text-xs">
+    <!-- Form -->
+    <form id="print-form" onsubmit="submitPrintOrder(event)" class="space-y-3.5 text-xs relative">
+      
+      <!-- ชื่อ & เบอร์ -->
       <div>
-        <label class="font-bold text-gray-700 block mb-1">ชื่อผู้สั่ง / เบอร์โทรศัพท์ *</label>
+        <label class="font-bold text-slate-700 block mb-1 text-xs flex items-center gap-1">
+          <span>👤</span> ชื่อผู้สั่ง / เบอร์โทรศัพท์ <span class="text-rose-500">*</span>
+        </label>
         <div class="grid grid-cols-2 gap-2">
-          <input type="text" id="cust-name" required placeholder="ชื่อของคุณ" class="w-full p-2.5 border rounded-xl bg-gray-50">
-          <input type="tel" id="cust-phone" required placeholder="เบอร์โทร" class="w-full p-2.5 border rounded-xl bg-gray-50">
+          <input type="text" id="cust-name" required placeholder="ชื่อของคุณ" class="w-full p-2.5 border-2 border-pink-100 rounded-2xl bg-pink-50/30 focus:bg-white focus:border-pink-400 focus:outline-none transition font-medium">
+          <input type="tel" id="cust-phone" required placeholder="เบอร์โทรศัพท์" class="w-full p-2.5 border-2 border-pink-100 rounded-2xl bg-pink-50/30 focus:bg-white focus:border-pink-400 focus:outline-none transition font-medium">
         </div>
       </div>
 
-      <!-- ⏰ ช่องเวลานัดรับเอกสาร -->
+      <!-- เวลาที่สะดวกมารับเอกสาร -->
       <div>
-        <label class="font-bold text-gray-700 block mb-1">⏰ เวลาที่สะดวกมารับเอกสาร *</label>
-        <input type="time" id="pickup-time" required class="w-full p-2.5 border rounded-xl bg-gray-50 font-semibold text-gray-800">
+        <label class="font-bold text-slate-700 block mb-1 text-xs flex items-center gap-1">
+          <span>⏰</span> เวลาที่สะดวกมารับเอกสาร <span class="text-rose-500">*</span>
+        </label>
+        <input type="time" id="pickup-time" required class="w-full p-2.5 border-2 border-pink-100 rounded-2xl bg-pink-50/30 focus:bg-white focus:border-pink-400 focus:outline-none transition font-bold text-slate-800">
       </div>
 
       <!-- เลือกประเภทบริการ / รูปแบบการพิมพ์ -->
       <div>
-        <label class="font-bold text-gray-700 block mb-1">ประเภทบริการ & รูปแบบการพิมพ์ (A4)</label>
-        <select id="service-option" onchange="calcPrice()" class="w-full p-2.5 border rounded-xl bg-gray-50 font-semibold text-xs text-gray-800">
+        <label class="font-bold text-slate-700 block mb-1 text-xs flex items-center gap-1">
+          <span>⚙️</span> ประเภทบริการ & รูปแบบการพิมพ์ (A4)
+        </label>
+        <select id="service-option" onchange="calcPrice()" class="w-full p-2.5 border-2 border-pink-100 rounded-2xl bg-pink-50/30 focus:bg-white focus:border-pink-400 focus:outline-none transition font-semibold text-slate-800 cursor-pointer">
           <optgroup label="🖨️ ปริ้นเอกสาร (A4)">
             <option value="print_bw_single">ปริ้น ขาว-ดำ (หน้าเดียว) — 3 ฿/แผ่น (โปร 4 แผ่น 10 ฿)</option>
             <option value="print_bw_double">ปริ้น ขาว-ดำ (หน้า-หลัง) — 4 ฿/แผ่น (โปร 4 แผ่น 15 ฿)</option>
@@ -45,37 +77,98 @@
         </select>
       </div>
 
+      <!-- แนบไฟล์เอกสาร -->
       <div>
-        <label class="font-bold text-gray-700 block mb-1">แนบไฟล์เอกสาร (PDF หรือ รูปภาพ) *</label>
-        <input type="file" id="file-input" accept=".pdf,image/*" required class="w-full text-xs file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-700 font-semibold hover:file:bg-indigo-100">
+        <label class="font-bold text-slate-700 block mb-1 text-xs flex items-center gap-1">
+          <span>📎</span> แนบไฟล์เอกสาร (PDF หรือ รูปภาพ) <span class="text-rose-500">*</span>
+        </label>
+        <input type="file" id="file-input" accept=".pdf,image/*" required class="w-full text-xs file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-pink-100 file:text-pink-700 file:font-bold hover:file:bg-pink-200 transition cursor-pointer border-2 border-dashed border-pink-200 p-1.5 rounded-2xl bg-pink-50/20">
       </div>
 
+      <!-- จำนวนหน้า & จำนวนชุด -->
       <div class="grid grid-cols-2 gap-2">
         <div>
-          <label class="font-bold text-gray-700 block mb-1">จำนวนหน้าในไฟล์</label>
-          <input type="number" id="num-pages" min="1" value="1" onchange="calcPrice()" class="w-full p-2.5 border rounded-xl bg-gray-50 text-center font-bold">
+          <label class="font-bold text-slate-700 block mb-1 text-[11px]">จำนวนหน้าในไฟล์</label>
+          <input type="number" id="num-pages" min="1" value="1" onchange="calcPrice()" class="w-full p-2.5 border-2 border-pink-100 rounded-2xl bg-pink-50/30 text-center font-extrabold focus:border-pink-400 focus:outline-none">
         </div>
         <div>
-          <label class="font-bold text-gray-700 block mb-1">จำนวนชุดที่พิมพ์</label>
-          <input type="number" id="num-copies" min="1" value="1" onchange="calcPrice()" class="w-full p-2.5 border rounded-xl bg-gray-50 text-center font-bold">
+          <label class="font-bold text-slate-700 block mb-1 text-[11px]">จำนวนชุดที่พิมพ์</label>
+          <input type="number" id="num-copies" min="1" value="1" onchange="calcPrice()" class="w-full p-2.5 border-2 border-pink-100 rounded-2xl bg-pink-50/30 text-center font-extrabold focus:border-pink-400 focus:outline-none">
         </div>
       </div>
 
       <!-- หมายเหตุราคาสี -->
-      <div class="text-[10px] text-amber-600 bg-amber-50 p-2 rounded-xl border border-amber-200">
-        * หมายเหตุ: งานพิมพ์สี ราคาประเมินอาจมีการพิจารณาปรับตามปริมาณสีจริงของเอกสารหน้าร้าน
+      <div class="text-[10px] text-amber-700 bg-amber-50/80 p-2.5 rounded-2xl border border-amber-200 flex gap-1.5 items-start shadow-sm">
+        <span class="text-xs">💡</span>
+        <span><strong>หมายเหตุ:</strong> งานพิมพ์สี ราคาประเมินอาจมีการปรับตามปริมาณสีจริงของเอกสารหน้าร้านนะคะ</span>
       </div>
 
       <!-- สรุปราคาสั่งพิมพ์ -->
-      <div class="bg-indigo-50/80 p-3 rounded-2xl border border-indigo-200 flex justify-between items-center text-indigo-900 mt-2">
-        <span class="font-bold text-sm">ประเมินราคาขาย:</span>
-        <span id="est-price" class="text-xl font-black text-indigo-700">3.00 ฿</span>
+      <div class="bg-gradient-to-r from-pink-50 via-rose-50 to-indigo-50 p-3.5 rounded-2xl border-2 border-pink-200/80 flex justify-between items-center text-slate-800 shadow-inner">
+        <span class="font-bold text-xs flex items-center gap-1 text-pink-700">
+          <span>🏷️</span> ประเมินราคาขาย:
+        </span>
+        <span id="est-price" class="text-2xl font-black text-rose-500 drop-shadow-sm">3.00 ฿</span>
       </div>
 
-      <button type="submit" id="btn-submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-2xl transition active:scale-95 text-sm shadow-md">
-        🚀 ส่งฝากพิมพ์ / ถ่ายเอกสาร
+      <!-- ปุ่มส่งฝากพิมพ์ -->
+      <button type="submit" id="btn-submit" class="w-full bg-gradient-to-r from-pink-500 via-rose-500 to-indigo-500 hover:from-pink-600 hover:to-indigo-600 text-white font-extrabold py-3.5 rounded-2xl transition-all duration-200 active:scale-95 text-sm shadow-lg shadow-pink-200 flex items-center justify-center gap-2">
+        <span>🚀</span> ส่งฝากพิมพ์ / ถ่ายเอกสาร
       </button>
     </form>
+  </div>
+
+  <!-- 🌟 CUSTOM KAWAII MODAL POPUP (แจ้งเตือนความสำเร็จ) -->
+  <div id="success-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 transition-all duration-300">
+    <div class="bg-white rounded-[2.5rem] max-w-sm w-full p-6 text-center shadow-2xl border-4 border-pink-200 relative transform transition-all scale-95 animate-bounce-short">
+      
+      <!-- Icon Badge -->
+      <div class="w-16 h-16 bg-pink-100 text-pink-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-3 shadow-inner border-2 border-pink-200">
+        🎉
+      </div>
+
+      <h3 class="text-lg font-black text-slate-800 mb-1">ฝากพิมพ์เอกสารสำเร็จ!</h3>
+      <p class="text-xs text-slate-500 mb-4">ขอบคุณที่ใช้บริการ KORO STORE ค่ะ 🐾</p>
+
+      <!-- Details Card -->
+      <div class="bg-pink-50/60 rounded-2xl p-4 border border-pink-100 space-y-2 text-xs text-left mb-5">
+        <div class="flex justify-between items-center border-b border-pink-100 pb-2">
+          <span class="text-slate-500 font-medium">รหัสออเดอร์:</span>
+          <div class="flex items-center gap-1">
+            <span id="modal-order-id" class="font-extrabold text-pink-600 text-sm">PO-xxxxxx</span>
+            <button onclick="copyOrderId()" title="คัดลอกรหัส" class="bg-white px-2 py-0.5 rounded-lg border border-pink-200 text-[10px] font-bold text-pink-500 hover:bg-pink-100 active:scale-95 transition">
+              📋 ก๊อปปี้
+            </button>
+          </div>
+        </div>
+        <div class="flex justify-between items-center pt-1">
+          <span class="text-slate-500 font-medium">เวลานัดรับเอกสาร:</span>
+          <span id="modal-pickup-time" class="font-bold text-indigo-600 text-sm">--:-- น.</span>
+        </div>
+      </div>
+
+      <p class="text-[11px] text-slate-600 font-medium mb-5 bg-amber-50 p-2.5 rounded-xl border border-amber-200/70">
+        📌 กรุณาแจ้ง <strong>รหัสออเดอร์</strong> นี้กับพนักงานเมื่อมารับเอกสารหน้าร้านนะคะ
+      </p>
+
+      <button onclick="closeSuccessModal()" class="w-full bg-gradient-to-r from-pink-500 to-indigo-500 hover:from-pink-600 hover:to-indigo-600 text-white font-extrabold py-3 rounded-2xl shadow-md active:scale-95 transition text-xs">
+        ตกลง / ปิดหน้าต่าง ✨
+      </button>
+    </div>
+  </div>
+
+  <!-- ⚠️ CUSTOM ERROR MODAL POPUP (แจ้งเตือน Error) -->
+  <div id="error-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-[2.5rem] max-w-sm w-full p-6 text-center shadow-2xl border-4 border-rose-200 relative">
+      <div class="w-14 h-14 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center text-2xl mx-auto mb-3">
+        ⚠️
+      </div>
+      <h3 class="text-base font-black text-slate-800 mb-1">เกิดข้อผิดพลาด</h3>
+      <p id="error-msg" class="text-xs text-rose-600 mb-4 bg-rose-50 p-3 rounded-xl border border-rose-100">--</p>
+      <button onclick="closeErrorModal()" class="w-full bg-slate-700 hover:bg-slate-800 text-white font-bold py-2.5 rounded-2xl transition text-xs">
+        ลองใหม่อีกครั้ง
+      </button>
+    </div>
   </div>
 
   <script>
@@ -128,13 +221,13 @@
       if (fileInput.files.length === 0) return;
 
       if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("นำ_WEB_APP_URL")) {
-        alert("กรุณาใส่ Web App URL ของ Google Apps Script ในโค้ดก่อนครับ");
+        showErrorModal("กรุณาใส่ Web App URL ของ Google Apps Script ในโค้ดก่อนค่ะ");
         return;
       }
 
       const btn = document.getElementById('btn-submit');
       btn.disabled = true;
-      btn.innerText = "⏳ กำลังอัปโหลดไฟล์...";
+      btn.innerHTML = `<span>⏳</span> กำลังอัปโหลดไฟล์...`;
 
       const opt = document.getElementById('service-option').value;
       let modeText = "ขาว-ดำ";
@@ -152,7 +245,7 @@
           action: "processPrintPreOrder",
           customerName: document.getElementById('cust-name').value,
           phone: document.getElementById('cust-phone').value,
-          pickupTime: document.getElementById('pickup-time').value, // ⏰ ส่งเวลาที่มารับ
+          pickupTime: document.getElementById('pickup-time').value,
           fileName: file.name,
           fileData: evt.target.result,
           paperSize: "A4",
@@ -171,22 +264,49 @@
         .then(res => res.json())
         .then(res => {
           if (res.success || res.status === "success") {
-            alert(`🎉 ฝากพิมพ์/ถ่ายเอกสารสำเร็จ!\nรหัสออเดอร์: ${res.orderId}\nเวลานัดรับ: ${payload.pickupTime} น.\nแจ้งรหัสนี้กับพนักงานเมื่อมารับเอกสารหน้าร้าน`);
-            location.reload();
+            showSuccessModal(res.orderId || "PO-SUCCESS", payload.pickupTime);
           } else {
-            alert("เกิดข้อผิดพลาด: " + (res.error || res.message || "ไม่สามารถส่งข้อมูลได้"));
+            showErrorModal("เกิดข้อผิดพลาด: " + (res.error || res.message || "ไม่สามารถส่งข้อมูลได้"));
             btn.disabled = false;
-            btn.innerText = "🚀 ส่งฝากพิมพ์ / ถ่ายเอกสาร";
+            btn.innerHTML = `<span>🚀</span> ส่งฝากพิมพ์ / ถ่ายเอกสาร`;
           }
         })
         .catch(err => {
-          alert("เกิดข้อผิดพลาดในการเชื่อมต่อ: " + err.message);
+          showErrorModal("เกิดข้อผิดพลาดในการเชื่อมต่อ: " + err.message);
           btn.disabled = false;
-          btn.innerText = "🚀 ส่งฝากพิมพ์ / ถ่ายเอกสาร";
+          btn.innerHTML = `<span>🚀</span> ส่งฝากพิมพ์ / ถ่ายเอกสาร`;
         });
       };
 
       reader.readAsDataURL(file);
+    }
+
+    // Modal Helpers
+    function showSuccessModal(orderId, pickupTime) {
+      document.getElementById('modal-order-id').innerText = orderId;
+      document.getElementById('modal-pickup-time').innerText = (pickupTime || "--:--") + " น.";
+      document.getElementById('success-modal').classList.remove('hidden');
+    }
+
+    function closeSuccessModal() {
+      document.getElementById('success-modal').classList.add('hidden');
+      location.reload();
+    }
+
+    function showErrorModal(msg) {
+      document.getElementById('error-msg').innerText = msg;
+      document.getElementById('error-modal').classList.remove('hidden');
+    }
+
+    function closeErrorModal() {
+      document.getElementById('error-modal').classList.add('hidden');
+    }
+
+    function copyOrderId() {
+      const orderIdText = document.getElementById('modal-order-id').innerText;
+      navigator.clipboard.writeText(orderIdText).then(() => {
+        alert("📋 คัดลอกรหัสออเดอร์ " + orderIdText + " เรียบร้อยแล้วค่ะ!");
+      });
     }
 
     window.onload = function() {

@@ -1,534 +1,197 @@
-var LINE_ACCESS_TOKEN = "yqTDDTz53dV90c1cxSBWFqLiho6QlZP/omyVGtbSuyeW+PH34v5vrtDSOTlxKwxL+Wd8p4tHkeojyQX7rgSy3DHgkFC9y7EYHKJ2jbiV0Cl51JgFO4pkCasf42DfQKYqQDp8N1FKAQQgLMiHPDkriQdB04t89/1O/w1cDnyilFU=";
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KORO STORE - ฝากพิมพ์ / ถ่ายเอกสาร</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 p-4 font-sans text-gray-800">
+  <div class="max-w-md mx-auto bg-white rounded-3xl p-6 shadow-xl border space-y-4">
+    <div class="text-center border-b pb-3">
+      <h2 class="text-xl font-black text-indigo-900">📑 ฝากพิมพ์ / ถ่ายเอกสาร KORO STORE</h2>
+      <p class="text-xs text-gray-500">ส่งไฟล์ล่วงหน้า มารับเอกสารหน้าร้านได้เลยไม่ต้องรอคิว (ขนาด A4)</p>
+    </div>
 
-// 📁 ตั้งค่า Folder ID ของ Google Drive สำหรับเก็บไฟล์ฝากพิมพ์
-var PRINT_DRIVE_FOLDER_ID = "1NuWdjIWoAc7fg0xAImfwrTWdvgnFO7Dp";
+    <form id="print-form" onsubmit="submitPrintOrder(event)" class="space-y-3 text-xs">
+      <div>
+        <label class="font-bold text-gray-700 block mb-1">ชื่อผู้สั่ง / เบอร์โทรศัพท์ *</label>
+        <div class="grid grid-cols-2 gap-2">
+          <input type="text" id="cust-name" required placeholder="ชื่อของคุณ" class="w-full p-2.5 border rounded-xl bg-gray-50">
+          <input type="tel" id="cust-phone" required placeholder="เบอร์โทร" class="w-full p-2.5 border rounded-xl bg-gray-50">
+        </div>
+      </div>
 
-// ฟังก์ชันกระตุ้นขอสิทธิ์ Google Drive
-function checkDrivePermission() {
-  var root = DriveApp.getRootFolder();
-  Logger.log(root.getName());
-}
+      <!-- ⏰ ช่องเวลานัดรับเอกสาร -->
+      <div>
+        <label class="font-bold text-gray-700 block mb-1">⏰ เวลาที่สะดวกมารับเอกสาร *</label>
+        <input type="time" id="pickup-time" required class="w-full p-2.5 border rounded-xl bg-gray-50 font-semibold text-gray-800">
+      </div>
 
-function responseJSON(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
-}
+      <!-- เลือกประเภทบริการ / รูปแบบการพิมพ์ -->
+      <div>
+        <label class="font-bold text-gray-700 block mb-1">ประเภทบริการ & รูปแบบการพิมพ์ (A4)</label>
+        <select id="service-option" onchange="calcPrice()" class="w-full p-2.5 border rounded-xl bg-gray-50 font-semibold text-xs text-gray-800">
+          <optgroup label="🖨️ ปริ้นเอกสาร (A4)">
+            <option value="print_bw_single">ปริ้น ขาว-ดำ (หน้าเดียว) — 3 ฿/แผ่น (โปร 4 แผ่น 10 ฿)</option>
+            <option value="print_bw_double">ปริ้น ขาว-ดำ (หน้า-หลัง) — 4 ฿/แผ่น (โปร 4 แผ่น 15 ฿)</option>
+            <option value="print_color_single">ปริ้น สี (หน้าเดียว) — 5 ฿/แผ่น *</option>
+            <option value="print_color_double">ปริ้น สี (หน้า-หลัง) — 8 ฿/แผ่น *</option>
+          </optgroup>
+          <optgroup label="📄 ถ่ายเอกสาร (A4)">
+            <option value="copy_bw_single">ถ่ายเอกสาร ขาว-ดำ — 2 ฿/แผ่น</option>
+            <option value="copy_color_single">ถ่ายเอกสาร สี — 4 ฿/แผ่น (โปร 3 แผ่น 10 ฿) *</option>
+          </optgroup>
+        </select>
+      </div>
 
-// ===================================================
-// 1. doGet: รับ Request แบบ GET
-// ===================================================
-function doGet(e) {
-  try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var action = (e && e.parameter && e.parameter.action) ? e.parameter.action : "";
+      <div>
+        <label class="font-bold text-gray-700 block mb-1">แนบไฟล์เอกสาร (PDF หรือ รูปภาพ) *</label>
+        <input type="file" id="file-input" accept=".pdf,image/*" required class="w-full text-xs file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-700 font-semibold hover:file:bg-indigo-100">
+      </div>
 
-    // Action A: ดึงโปรโมชั่นจากแท็บ "Promotions"
-    if (action === "getPromotions") {
-      var promoSheet = ss.getSheetByName("Promotions");
-      if (!promoSheet) {
-        return responseJSON({ status: "error", message: "ไม่พบแท็บ Promotions" });
-      }
-      var promoRows = promoSheet.getDataRange().getValues();
-      var promotions = [];
-      for (var p = 1; p < promoRows.length; p++) {
-        var status = String(promoRows[p][6] || "").trim().toLowerCase();
-        if (status === "active") {
-          promotions.push({
-            badge: String(promoRows[p][0] || ""),
-            title: String(promoRows[p][1] || ""),
-            detail: String(promoRows[p][2] || ""),
-            price: String(promoRows[p][3] || ""),
-            oldPrice: String(promoRows[p][4] || ""),
-            icon: String(promoRows[p][5] || "tags")
-          });
-        }
-      }
-      return responseJSON({ status: "success", data: promotions });
-    }
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="font-bold text-gray-700 block mb-1">จำนวนหน้าในไฟล์</label>
+          <input type="number" id="num-pages" min="1" value="1" onchange="calcPrice()" class="w-full p-2.5 border rounded-xl bg-gray-50 text-center font-bold">
+        </div>
+        <div>
+          <label class="font-bold text-gray-700 block mb-1">จำนวนชุดที่พิมพ์</label>
+          <input type="number" id="num-copies" min="1" value="1" onchange="calcPrice()" class="w-full p-2.5 border rounded-xl bg-gray-50 text-center font-bold">
+        </div>
+      </div>
 
-    // Action B: ดึงของรางวัลจากแท็บ "Rewards"
-    if (action === "getRewards") {
-      var rewardSheet = ss.getSheetByName("Rewards");
-      if (!rewardSheet) {
-        return responseJSON({ status: "error", message: "ไม่พบแท็บ Rewards" });
-      }
-      var rRows = rewardSheet.getDataRange().getValues();
-      var rewards = [];
-      for (var r = 1; r < rRows.length; r++) {
-        var rStatus = String(rRows[r][4] || "").trim().toLowerCase();
-        if (rStatus === "active") {
-          rewards.push({
-            rewardName: String(rRows[r][0] || ""),
-            pointsNeeded: Number(rRows[r][1] || 0),
-            amountText: String(rRows[r][2] || ""),
-            color: String(rRows[r][3] || "pink")
-          });
-        }
-      }
-      return responseJSON({ status: "success", data: rewards });
-    }
+      <!-- หมายเหตุราคาสี -->
+      <div class="text-[10px] text-amber-600 bg-amber-50 p-2 rounded-xl border border-amber-200">
+        * หมายเหตุ: งานพิมพ์สี ราคาประเมินอาจมีการพิจารณาปรับตามปริมาณสีจริงของเอกสารหน้าร้าน
+      </div>
 
-    // Action C: ดึงแต้มสมาชิกเฉพาะรายบุคคล
-    if (action === "getPoints") {
-      var lineUserId = String((e && e.parameter && e.parameter.lineUserId) || "").trim();
-      var phoneQuery = String((e && e.parameter && e.parameter.phone) || "").replace(/\D/g, "");
+      <!-- สรุปราคาสั่งพิมพ์ -->
+      <div class="bg-indigo-50/80 p-3 rounded-2xl border border-indigo-200 flex justify-between items-center text-indigo-900 mt-2">
+        <span class="font-bold text-sm">ประเมินราคาขาย:</span>
+        <span id="est-price" class="text-xl font-black text-indigo-700">3.00 ฿</span>
+      </div>
+
+      <button type="submit" id="btn-submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-2xl transition active:scale-95 text-sm shadow-md">
+        🚀 ส่งฝากพิมพ์ / ถ่ายเอกสาร
+      </button>
+    </form>
+  </div>
+
+  <script>
+    // 🔗 URL Google Apps Script Web App
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxFNLFRGk6InxObu-_zJcSbBnTRpvk7waJGTjyrnaaZ7i7_XwMzCcWAvG1h4IWkkT9gQ/exec";
+
+    let calculatedTotal = 3.00;
+
+    function calcPrice() {
+      const opt = document.getElementById('service-option').value;
+      const pages = parseInt(document.getElementById('num-pages').value) || 1;
+      const copies = parseInt(document.getElementById('num-copies').value) || 1;
       
-      var memberSheet = getOrCreateSheet(ss, "Members", ["ID", "Name", "Phone", "Points", "CreatedAt", "LineUserId"]);
-      var mRows = memberSheet.getDataRange().getValues();
+      let pricePerCopy = 0;
 
-      for (var m = 1; m < mRows.length; m++) {
-        var rowLineId = String(mRows[m][5] || "").trim();
-        var rowPhone = String(mRows[m][2] || "").replace(/\D/g, "");
-
-        if ((lineUserId !== "" && rowLineId === lineUserId) || 
-            (phoneQuery !== "" && rowPhone === phoneQuery) ||
-            (lineUserId !== "" && rowPhone === lineUserId)) {
-          return responseJSON({
-            status: "success",
-            points: Number(mRows[m][3] || 0)
-          });
-        }
+      if (opt === 'print_bw_single') {
+        const sets = Math.floor(pages / 4);
+        const rem = pages % 4;
+        pricePerCopy = (sets * 10) + (rem * 3);
+      } 
+      else if (opt === 'print_bw_double') {
+        const sheets = Math.ceil(pages / 2);
+        const sets = Math.floor(sheets / 4);
+        const rem = sheets % 4;
+        pricePerCopy = (sets * 15) + (rem * 4);
+      } 
+      else if (opt === 'print_color_single') {
+        pricePerCopy = pages * 5;
+      } 
+      else if (opt === 'print_color_double') {
+        const sheets = Math.ceil(pages / 2);
+        pricePerCopy = sheets * 8;
+      } 
+      else if (opt === 'copy_bw_single') {
+        pricePerCopy = pages * 2;
+      } 
+      else if (opt === 'copy_color_single') {
+        const sets = Math.floor(pages / 3);
+        const rem = pages % 3;
+        pricePerCopy = (sets * 10) + (rem * 4);
       }
-      return responseJSON({ status: "success", points: 0 });
+
+      calculatedTotal = pricePerCopy * copies;
+      document.getElementById('est-price').innerText = calculatedTotal.toFixed(2) + ' ฿';
     }
 
-    // Action D: ดึงรายการงานฝากพิมพ์ที่ค้างอยู่
-    if (action === "getPendingPrintOrders") {
-      var pendingOrders = getPendingPrintOrders();
-      return responseJSON({ status: "success", orders: pendingOrders });
-    }
+    function submitPrintOrder(e) {
+      e.preventDefault();
+      const fileInput = document.getElementById('file-input');
+      if (fileInput.files.length === 0) return;
 
-    // Action E: ดึงข้อมูลสมาชิกทั้งหมด (Default)
-    var sheet = getOrCreateSheet(ss, "Members", ["ID", "Name", "Phone", "Points", "CreatedAt", "LineUserId"]);
-    var rows = sheet.getDataRange().getDisplayValues();
-    var members = [];
+      if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("นำ_WEB_APP_URL")) {
+        alert("กรุณาใส่ Web App URL ของ Google Apps Script ในโค้ดก่อนครับ");
+        return;
+      }
 
-    for (var i = 1; i < rows.length; i++) {
-      var id = String(rows[i][0] || "").trim();
-      var name = String(rows[i][1] || "").trim();
-      var rawPhone = String(rows[i][2] || "").replace(/\D/g, "");
-      if (rawPhone.length === 9 && !rawPhone.startsWith("0")) rawPhone = "0" + rawPhone;
-      var phone = rawPhone;
-      var points = Number(rows[i][3] || 0);
-      var createdAt = String(rows[i][4] || "").split(" GMT")[0].trim();
-      var lineUserIdVal = String(rows[i][5] || "").trim();
+      const btn = document.getElementById('btn-submit');
+      btn.disabled = true;
+      btn.innerText = "⏳ กำลังอัปโหลดไฟล์...";
 
-      if (id !== "" || name !== "" || phone !== "") {
-        members.push({
-          id: id,
-          name: name,
-          phone: phone,
-          points: points,
-          createdAt: createdAt,
-          lineUserId: lineUserIdVal
+      const opt = document.getElementById('service-option').value;
+      let modeText = "ขาว-ดำ";
+      let sidesText = "หน้าเดียว";
+
+      if (opt.includes("color")) modeText = "สี";
+      if (opt.includes("double")) sidesText = "หน้า-หลัง";
+      if (opt.startsWith("copy")) modeText = "ถ่ายเอกสาร " + modeText;
+
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+
+      reader.onload = function(evt) {
+        const payload = {
+          action: "processPrintPreOrder",
+          customerName: document.getElementById('cust-name').value,
+          phone: document.getElementById('cust-phone').value,
+          pickupTime: document.getElementById('pickup-time').value, // ⏰ ส่งเวลาที่มารับ
+          fileName: file.name,
+          fileData: evt.target.result,
+          paperSize: "A4",
+          printMode: modeText,
+          printSides: sidesText,
+          pages: parseInt(document.getElementById('num-pages').value),
+          copies: parseInt(document.getElementById('num-copies').value),
+          totalPrice: calculatedTotal
+        };
+
+        fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(res => {
+          if (res.success || res.status === "success") {
+            alert(`🎉 ฝากพิมพ์/ถ่ายเอกสารสำเร็จ!\nรหัสออเดอร์: ${res.orderId}\nเวลานัดรับ: ${payload.pickupTime} น.\nแจ้งรหัสนี้กับพนักงานเมื่อมารับเอกสารหน้าร้าน`);
+            location.reload();
+          } else {
+            alert("เกิดข้อผิดพลาด: " + (res.error || res.message || "ไม่สามารถส่งข้อมูลได้"));
+            btn.disabled = false;
+            btn.innerText = "🚀 ส่งฝากพิมพ์ / ถ่ายเอกสาร";
+          }
+        })
+        .catch(err => {
+          alert("เกิดข้อผิดพลาดในการเชื่อมต่อ: " + err.message);
+          btn.disabled = false;
+          btn.innerText = "🚀 ส่งฝากพิมพ์ / ถ่ายเอกสาร";
         });
-      }
+      };
+
+      reader.readAsDataURL(file);
     }
 
-    return responseJSON({ status: "success", members: members });
-
-  } catch (err) {
-    return responseJSON({ status: "error", message: err.toString(), members: [] });
-  }
-}
-
-// ===================================================
-// 2. doPost: รับข้อมูล
-// ===================================================
-function doPost(e) {
-  try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var data = {};
-
-    if (e && e.postData && e.postData.contents) {
-      data = JSON.parse(e.postData.contents);
-    } else if (e && e.parameter && e.parameter.payload) {
-      data = JSON.parse(e.parameter.payload);
-    } else if (e && e.parameter) {
-      data = e.parameter;
-    }
-
-    var action = String(data.action || "add").trim();
-
-    // Action 1: ตัดแต้มแลกของรางวัล/คูปอง (redeem)
-    if (action === "redeem") {
-      var sheet = getOrCreateSheet(ss, "Members", ["ID", "Name", "Phone", "Points", "CreatedAt", "LineUserId"]);
-      var lineUserIdRedeem = String(data.lineUserId || "").trim();
-      var pointsToRedeem = Number(data.pointsToRedeem || 0);
-      var rewardName = String(data.rewardName || "ส่วนลดคูปอง");
-      var rowsRedeem = sheet.getDataRange().getValues();
-
-      var userRowIndex = -1;
-      var currentPoints = 0;
-
-      for (var k = 1; k < rowsRedeem.length; k++) {
-        var rLineId = String(rowsRedeem[k][5] || "").trim();
-        var rPhone = String(rowsRedeem[k][2] || "").replace(/\D/g, "");
-
-        if ((lineUserIdRedeem !== "" && rLineId === lineUserIdRedeem) || (lineUserIdRedeem !== "" && rPhone === lineUserIdRedeem)) {
-          userRowIndex = k + 1;
-          currentPoints = Number(rowsRedeem[k][3] || 0);
-          break;
-        }
-      }
-
-      if (userRowIndex === -1) {
-        return responseJSON({ status: "error", message: "ไม่พบข้อมูลสมาชิก" });
-      }
-
-      if (currentPoints < pointsToRedeem) {
-        return responseJSON({ status: "error", message: "แต้มสะสมไม่เพียงพอค่ะ" });
-      }
-
-      var remainingPoints = currentPoints - pointsToRedeem;
-      sheet.getRange(userRowIndex, 4).setValue(remainingPoints);
-
-      var couponCode = "KORO-" + Math.random().toString(36).substring(2, 8).toUpperCase();
-      var nowStr = Utilities.formatDate(new Date(), "Asia/Bangkok", "dd/MM/yyyy HH:mm:ss");
-
-      var couponSheet = getOrCreateSheet(ss, "Coupons", ["couponCode", "rewardName", "discountAmount", "lineUserId", "status", "createdAt", "usedAt"]);
-      
-      var rawDiscount = data.discountAmount;
-      var discountAmount = 0;
-
-      if (rawDiscount !== undefined && rawDiscount !== null && rawDiscount !== "") {
-        discountAmount = Number(String(rawDiscount).replace(/[^\d.]/g, "")) || 0;
-      } else {
-        var rewardSheet = ss.getSheetByName("Rewards");
-        if (rewardSheet) {
-          var rData = rewardSheet.getDataRange().getValues();
-          for (var r = 1; r < rData.length; r++) {
-            var rName = String(rData[r][0] || "").trim();
-            if (rName === rewardName) {
-              discountAmount = Number(String(rData[r][2] || "").replace(/[^\d.]/g, "")) || 0;
-              break;
-            }
-          }
-        }
-        if (discountAmount === 0 && pointsToRedeem > 0) {
-          discountAmount = pointsToRedeem / 10;
-        }
-      }
-
-      couponSheet.appendRow([couponCode, rewardName, discountAmount, lineUserIdRedeem, "active", nowStr, ""]);
-
-      return responseJSON({
-        status: "success",
-        couponCode: couponCode,
-        discountAmount: discountAmount,
-        remainingPoints: remainingPoints
-      });
-    }
-
-    // Action 2: ตรวจสอบและใช้งานคูปองจากระบบ POS (verifyCoupon)
-    if (action === "verifyCoupon") {
-      var inputCoupon = String(data.couponCode || "").trim().toUpperCase();
-      var couponSheet = ss.getSheetByName("Coupons");
-      
-      if (!couponSheet) {
-        return responseJSON({ status: "error", message: "ไม่พบแท็บ Coupons" });
-      }
-
-      var cRows = couponSheet.getDataRange().getValues();
-      
-      for (var c = 1; c < cRows.length; c++) {
-        var codeInSheet = String(cRows[c][0] || "").trim().toUpperCase();
-        var status = String(cRows[c][4] || "").trim().toLowerCase();
-
-        if (codeInSheet === inputCoupon) {
-          if (status === "used") {
-            return responseJSON({ status: "used", message: "คูปองนี้ถูกใช้งานไปแล้วค่ะ" });
-          }
-          
-          if (status === "active") {
-            var discountValue = Number(cRows[c][2] || 0);
-            var rewardNameText = String(cRows[c][1] || "");
-
-            var usedTimeStr = Utilities.formatDate(new Date(), "Asia/Bangkok", "dd/MM/yyyy HH:mm:ss");
-            couponSheet.getRange(c + 1, 5).setValue("used");
-            couponSheet.getRange(c + 1, 7).setValue(usedTimeStr);
-
-            return responseJSON({
-              status: "success",
-              rewardName: rewardNameText,
-              discountAmount: discountValue,
-              message: "ใช้คูปองสำเร็จ"
-            });
-          }
-        }
-      }
-
-      return responseJSON({ status: "not_found", message: "ไม่พบรหัสคูปองนี้ในระบบ" });
-    }
-
-    // Action 3: บันทึกฝากพิมพ์งานล่วงหน้า (processPrintPreOrder)
-    if (action === "processPrintPreOrder") {
-      var printRes = processPrintPreOrder(data);
-      return responseJSON(printRes);
-    }
-
-    // Action 4: เปลี่ยนสถานะงานฝากพิมพ์เป็นสำเร็จ (completePrintOrder)
-    if (action === "completePrintOrder") {
-      var isCompleted = completePrintOrder(data.orderId);
-      return responseJSON({ status: isCompleted ? "success" : "not_found" });
-    }
-
-    // Action 5: ลบสมาชิก (delete)
-    if (action === "delete") {
-      var sheet = getOrCreateSheet(ss, "Members", ["ID", "Name", "Phone", "Points", "CreatedAt", "LineUserId"]);
-      var allDataDel = sheet.getDataRange().getDisplayValues();
-      var deleted = false;
-      for (var d = allDataDel.length - 1; d >= 1; d--) {
-        var rowIdDel = String(allDataDel[d][0] || '').trim();
-        var rowPhoneDel = String(allDataDel[d][2] || '').replace(/\D/g, "");
-        var targetPhoneDel = String(data.phone || '').replace(/\D/g, "");
-
-        if ((data.id && rowIdDel === String(data.id).trim()) || (targetPhoneDel && rowPhoneDel === targetPhoneDel)) {
-          sheet.deleteRow(d + 1);
-          deleted = true;
-        }
-      }
-      return responseJSON({ status: deleted ? "success" : "not_found" });
-    }
-
-    // Action 6: อัปเดตแต้ม / แก้ไขข้อมูลสมาชิก
-    if (action === "updatePoints" || action === "edit" || action === "update" || action === "updateMember") {
-      var sheet = getOrCreateSheet(ss, "Members", ["ID", "Name", "Phone", "Points", "CreatedAt", "LineUserId"]);
-      var allDataUp = sheet.getDataRange().getDisplayValues();
-      var updated = false;
-
-      var targetId = String(data.id || "").trim();
-      var targetPhoneRaw = String(data.phone || "").replace(/\D/g, "");
-      var targetPhoneClean = targetPhoneRaw.replace(/^0+/, "");
-
-      for (var j = 1; j < allDataUp.length; j++) {
-        var rId = String(allDataUp[j][0] || "").trim();
-        var rPhoneRaw = String(allDataUp[j][2] || "").replace(/\D/g, "");
-        var rPhoneClean = rPhoneRaw.replace(/^0+/, "");
-
-        var isIdMatch = (targetId !== "" && rId === targetId);
-        var isPhoneMatch = (targetPhoneClean !== "" && rPhoneClean === targetPhoneClean);
-
-        if (isIdMatch || isPhoneMatch) {
-          if (data.points !== undefined && data.points !== null) {
-            sheet.getRange(j + 1, 4).setValue(Number(data.points));
-          }
-
-          if (data.name) {
-            sheet.getRange(j + 1, 2).setValue(String(data.name).trim());
-          }
-
-          var newPhone = targetPhoneRaw;
-          if (newPhone.length === 9 && !newPhone.startsWith("0")) newPhone = "0" + newPhone;
-          if (newPhone) {
-            sheet.getRange(j + 1, 3).setValue("'" + newPhone);
-          }
-
-          updated = true;
-          break;
-        }
-      }
-      return responseJSON({ status: updated ? "success" : "not_found", updatedPoints: data.points });
-    }
-
-    // Action 7: สมัครสมาชิกใหม่ (add / register)
-    if (action === "add" || action === "register") {
-      var sheet = getOrCreateSheet(ss, "Members", ["ID", "Name", "Phone", "Points", "CreatedAt", "LineUserId"]);
-      var cleanPhone = String(data.phone || "").replace(/\D/g, "");
-      if (cleanPhone.length === 9 && !cleanPhone.startsWith("0")) cleanPhone = "0" + cleanPhone;
-      var lineUserId = String(data.lineUserId || data.LineUserId || "").trim();
-
-      var rowsAdd = sheet.getDataRange().getDisplayValues();
-      for (var r = 1; r < rowsAdd.length; r++) {
-        var rowPhoneAdd = String(rowsAdd[r][2] || "").replace(/\D/g, "");
-        if (rowPhoneAdd.length === 9 && !rowPhoneAdd.startsWith("0")) rowPhoneAdd = "0" + rowPhoneAdd;
-        var rowLineIdAdd = String(rowsAdd[r][5] || "").trim();
-
-        if ((cleanPhone !== "" && rowPhoneAdd === cleanPhone) || (lineUserId !== "" && rowLineIdAdd === lineUserId)) {
-          return responseJSON({ status: "duplicate", message: "เบอร์โทรศัพท์หรือบัญชี LINE นี้เป็นสมาชิกอยู่แล้วค่ะ" });
-        }
-      }
-
-      var newId = String(data.id || new Date().getTime().toString()).trim();
-      var name = String(data.name || "").trim();
-      var phoneFormatted = cleanPhone ? "'" + cleanPhone : "";
-      var points = (data.points !== undefined && data.points !== null) ? Number(data.points) : 0;
-      var createdAt = Utilities.formatDate(new Date(), "Asia/Bangkok", "dd/MM/yyyy HH:mm:ss");
-
-      sheet.appendRow([newId, name, phoneFormatted, points, createdAt, lineUserId]);
-
-      if (lineUserId && LINE_ACCESS_TOKEN) {
-        sendWelcomeMessage(lineUserId, name);
-      }
-
-      return responseJSON({ status: "success", message: "บันทึกสมาชิกเรียบร้อย" });
-    }
-
-    return responseJSON({ status: "error", message: "ไม่พบคำสั่ง (Action) ที่ระบุ: " + action });
-
-  } catch (err) {
-    return responseJSON({ status: "error", message: err.toString() });
-  }
-}
-
-// Helper: ดึงแท็บ หรือสร้างแท็บพร้อมหัวตารางหากยังไม่มี
-function getOrCreateSheet(ss, sheetName, defaultHeaders) {
-  var sheet = ss.getSheetByName(sheetName);
-  if (!sheet) {
-    sheet = ss.insertSheet(sheetName);
-    if (defaultHeaders && defaultHeaders.length > 0) {
-      sheet.appendRow(defaultHeaders);
-    }
-  }
-  return sheet;
-}
-
-// ฟังก์ชันส่งข้อความต้อนรับผ่าน LINE Push Message
-function sendWelcomeMessage(lineUserId, name) {
-  var url = "https://api.line.me/v2/bot/message/push";
-  var payload = {
-    to: lineUserId,
-    messages: [{ type: "text", text: "🎉 ยินดีต้อนรับคุณ " + name + " เข้าสู่สมาชิก KORO STORE เรียบร้อยแล้วค่ะ!\n\nขอบคุณที่สมัครสมาชิกกับเรานะคะ 🛒✨" }]
-  };
-  try {
-    UrlFetchApp.fetch(url, {
-      method: "post",
-      contentType: "application/json",
-      headers: { Authorization: "Bearer " + LINE_ACCESS_TOKEN },
-      payload: JSON.stringify(payload),
-      muteHttpExceptions: true
-    });
-  } catch (e) {}
-}
-
-// ฟังก์ชันบันทึกงานฝากพิมพ์
-function processPrintPreOrder(payload) {
-  try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = getOrCreateSheet(ss, "PrintOrders", ["OrderId", "Timestamp", "CustomerName", "Phone", "PickupTime", "PaperType", "PrintMode", "Sides", "Pages", "Copies", "TotalPrice", "FileUrl", "Status"]);
-
-    var folder;
-    try {
-      if (PRINT_DRIVE_FOLDER_ID && PRINT_DRIVE_FOLDER_ID !== "ใส่_FOLDER_ID_ของ_GOOGLE_DRIVE_ที่นี่") {
-        folder = DriveApp.getFolderById(PRINT_DRIVE_FOLDER_ID);
-      }
-    } catch (fErr) {
-      Logger.log("ไม่สามารถค้นหา Folder ID ที่ระบุได้ ใช้โฟลเดอร์สำรอง: " + fErr.toString());
-    }
-
-    if (!folder) {
-      var folders = DriveApp.getFoldersByName("KORO_Print_Files");
-      if (folders.hasNext()) {
-        folder = folders.next();
-      } else {
-        folder = DriveApp.createFolder("KORO_Print_Files");
-      }
-    }
-
-    var fileUrl = "";
-    if (payload.fileData) {
-      var contentType = "application/pdf";
-      var base64Data = String(payload.fileData || "");
-      
-      if (base64Data.indexOf(";") > -1 && base64Data.indexOf(",") > -1) {
-        contentType = base64Data.substring(5, base64Data.indexOf(';'));
-        base64Data = base64Data.substring(base64Data.indexOf('base64,') + 7);
-      }
-      
-      // ลบ whitespace และแปลง space กลับเป็น +
-      base64Data = base64Data.replace(/ /g, "+").replace(/[\r\n]/g, "");
-
-      var decodedBlob = Utilities.newBlob(Utilities.base64Decode(base64Data), contentType, payload.fileName || "document.pdf");
-      var file = folder.createFile(decodedBlob);
-
-      try {
-        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      } catch (shareErr) {
-        Logger.log("ไม่สามารถปรับสิทธิ์แชร์ไฟล์ได้: " + shareErr.toString());
-      }
-
-      fileUrl = file.getUrl();
-    }
-
-    var todayStr = Utilities.formatDate(new Date(), "Asia/Bangkok", "yyyyMMdd");
-    var orderCount = sheet.getLastRow();
-    var orderId = "PO-" + todayStr + "-" + String(orderCount).padStart(3, '0');
-    var timestamp = Utilities.formatDate(new Date(), "Asia/Bangkok", "dd/MM/yyyy HH:mm:ss");
-
-    sheet.appendRow([
-      orderId,                        // Col A
-      timestamp,                      // Col B
-      payload.customerName || "",     // Col C
-      payload.phone || "",            // Col D
-      payload.pickupTime || "",       // Col E
-      payload.paperSize || "A4",      // Col F
-      payload.printMode || "ขาว-ดำ",   // Col G
-      payload.printSides || "หน้าเดียว", // Col H
-      Number(payload.pages || 1),     // Col I
-      Number(payload.copies || 1),    // Col J
-      Number(payload.totalPrice || 0),// Col K
-      fileUrl,                        // Col L
-      "PENDING"                       // Col M
-    ]);
-
-    return { status: "success", success: true, orderId: orderId, fileUrl: fileUrl };
-  } catch (err) {
-    return { status: "error", success: false, error: err.toString() };
-  }
-}
-
-// ฟังก์ชันดึงรายการงานฝากพิมพ์ที่ค้างอยู่ (PENDING)
-function getPendingPrintOrders() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName("PrintOrders");
-  if (!sheet || sheet.getLastRow() <= 1) return [];
-
-  var data = sheet.getDataRange().getValues();
-  var pendingList = [];
-
-  for (var i = 1; i < data.length; i++) {
-    var status = String(data[i][12] || "").trim().toUpperCase(); // Col M (Status)
-    if (status === "PENDING") {
-      pendingList.push({
-        rowIndex: i + 1,
-        orderId: String(data[i][0] || ""),
-        timestamp: String(data[i][1] || ""),
-        customerName: String(data[i][2] || ""),
-        phone: String(data[i][3] || ""),
-        pickupTime: String(data[i][4] || ""),
-        paperSize: String(data[i][5] || ""),
-        printMode: String(data[i][6] || ""),
-        printSides: String(data[i][7] || ""),
-        pages: Number(data[i][8] || 0),
-        copies: Number(data[i][9] || 0),
-        totalPrice: Number(data[i][10] || 0),
-        fileUrl: String(data[i][11] || "")
-      });
-    }
-  }
-  return pendingList;
-}
-
-// ฟังก์ชันอัปเดตสถานะงานพิมพ์เป็นสำเร็จ (COMPLETED)
-function completePrintOrder(orderId) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName("PrintOrders");
-  if (!sheet) return false;
-  var data = sheet.getDataRange().getValues();
-
-  for (var i = 1; i < data.length; i++) {
-    if (String(data[i][0] || "").trim() === String(orderId || "").trim()) {
-      sheet.getRange(i + 1, 13).setValue("COMPLETED"); // Col M (Status)
-      return true;
-    }
-  }
-  return false;
-}
-
-// ฟังก์ชันสำหรับปลดล็อกสิทธิ์สร้างไฟล์ใน Google Drive ทั้งหมด
-function forceDriveAuth() {
-  var folder = DriveApp.getRootFolder();
-  var file = folder.createFile("test.txt", "test");
-  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  file.setTrashed(true);
-}
+    window.onload = function() {
+      calcPrice();
+    };
+  </script>
+</body>
+</html>

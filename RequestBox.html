@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KORO STORE - Request Box</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Kanit', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 flex items-center justify-center">
+
+  <div class="w-full max-w-md bg-slate-800 rounded-3xl p-6 shadow-2xl border border-slate-700">
+    <!-- Header -->
+    <div class="text-center mb-6">
+      <div class="w-16 h-16 bg-indigo-600/20 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto mb-3 text-3xl">
+        🎁
+      </div>
+      <h1 class="text-xl font-bold text-white">อยากให้ KORO STORE เอาอะไรมาขาย?</h1>
+      <p class="text-xs text-slate-400 mt-1">เสนอไอเทมที่คุณอยากได้ ชิ้นไหนฮิต ร้านจัดมาลงให้แน่นอน!</p>
+    </div>
+
+    <!-- Form -->
+    <form id="requestForm" class="space-y-4">
+      
+      <!-- ชื่อสินค้า -->
+      <div>
+        <label class="block text-xs font-medium text-slate-300 mb-1">ชื่อสินค้า / ไอเทมที่ต้องการ <span class="text-rose-400">*</span></label>
+        <input type="text" id="productName" required placeholder="เช่น สมุดโน้ตปกนุ่ม, ขนมเยลลี่ผลไม้" 
+          class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+      </div>
+
+      <!-- หมวดหมู่ -->
+      <div>
+        <label class="block text-xs font-medium text-slate-300 mb-1">หมวดหมู่สินค้า <span class="text-rose-400">*</span></label>
+        <select id="category" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+          <option value="">-- เลือกหมวดหมู่ --</option>
+          <option value="เครื่องเขียน">✏️ เครื่องเขียน / อุปกรณ์เรียน</option>
+          <option value="ขนมกิ๊ฟช็อป">🍬 ขนม / ของกินเล่น</option>
+          <option value="ของน่ารัก/ของขวัญ">🧸 ของน่ารัก / กิ๊ฟช็อป / ของขวัญ</option>
+          <option value="งานพิมพ์/เอกสาร">📄 บริการงานพิมพ์ / เอกสาร</option>
+          <option value="อื่นๆ">✨ อื่นๆ</option>
+        </select>
+      </div>
+
+      <!-- รูปภาพประกอบ -->
+      <div>
+        <label class="block text-xs font-medium text-slate-300 mb-1">แนบรูปภาพประกอบ (ถ้ามี)</label>
+        <div class="relative border-2 border-dashed border-slate-700 rounded-xl p-4 text-center bg-slate-900/50 hover:border-indigo-500 transition cursor-pointer">
+          <input type="file" id="imageInput" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="previewImage(event)">
+          <div id="uploadPlaceholder">
+            <span class="text-2xl">📸</span>
+            <p class="text-xs text-slate-400 mt-1">กดเพื่อเลือกรูปภาพ</p>
+          </div>
+          <img id="imagePreview" class="hidden max-h-36 mx-auto rounded-lg object-contain shadow-md" />
+        </div>
+      </div>
+
+      <!-- รายละเอียดเพิ่มเติม -->
+      <div>
+        <label class="block text-xs font-medium text-slate-300 mb-1">รายละเอียดเพิ่มเติม / แบรนด์ / ยี่ห้อ</label>
+        <textarea id="note" rows="2" placeholder="เช่น ยี่ห้อ..., ขอเป็นสีพาสเทล" 
+          class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"></textarea>
+      </div>
+
+      <!-- ชื่อผู้รีเควส / เบอร์โทร -->
+      <div>
+        <label class="block text-xs font-medium text-slate-300 mb-1">ชื่อผู้เสนอ / ชื่อไลน์ (สำหรับรับสิทธิพิเศษ)</label>
+        <input type="text" id="customerName" placeholder="เช่น คุณกมลวรรณ" 
+          class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+      </div>
+
+      <!-- ปุ่มส่ง -->
+      <button type="submit" id="submitBtn" 
+        class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition shadow-lg flex items-center justify-center gap-2">
+        <span>🚀 ส่งรีเควสสินค้า</span>
+      </button>
+    </form>
+
+    <!-- Message Display -->
+    <div id="statusMsg" class="hidden mt-4 text-center text-sm p-3 rounded-xl"></div>
+  </div>
+
+  <script>
+    // 🔴 เปลี่ยนเป็น Web App URL จาก Google Apps Script ของคุณ
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbx2ZPyaidNRnrNh_GJQgsNj9Qwi7482s2xFPdAClREaceH2ZBM9Yar-t0T-vvxbqPeVgQ/exec";
+
+    let base64Image = "";
+    let imageName = "";
+
+    function previewImage(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      imageName = file.name;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        base64Image = e.target.result;
+        document.getElementById('imagePreview').src = base64Image;
+        document.getElementById('imagePreview').classList.remove('hidden');
+        document.getElementById('uploadPlaceholder').classList.add('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    document.getElementById('requestForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const submitBtn = document.getElementById('submitBtn');
+      const statusMsg = document.getElementById('statusMsg');
+      
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<span>⏳ กำลังบันทึกข้อมูล...</span>`;
+      statusMsg.className = "hidden";
+
+      const payload = {
+        action: "submitProductRequest",
+        productName: document.getElementById('productName').value,
+        category: document.getElementById('category').value,
+        note: document.getElementById('note').value,
+        customerName: document.getElementById('customerName').value,
+        imageBase64: base64Image,
+        imageName: imageName
+      };
+
+      // ส่งข้อมูลไปยัง Apps Script ด้วย fetch API
+      fetch(GAS_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(res => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<span>🚀 ส่งรีเควสสินค้า</span>`;
+        
+        if (res.status === "success") {
+          statusMsg.className = "mt-4 text-center text-xs p-3 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+          statusMsg.innerText = res.message || "ส่งคำขอเรียบร้อยแล้ว!";
+          document.getElementById('requestForm').reset();
+          document.getElementById('imagePreview').classList.add('hidden');
+          document.getElementById('uploadPlaceholder').classList.remove('hidden');
+          base64Image = "";
+          imageName = "";
+        } else {
+          statusMsg.className = "mt-4 text-center text-xs p-3 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30";
+          statusMsg.innerText = "เกิดข้อผิดพลาด: " + (res.message || "ไม่สามารถทำรายการได้");
+        }
+      })
+      .catch(err => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<span>🚀 ส่งรีเควสสินค้า</span>`;
+        statusMsg.className = "mt-4 text-center text-xs p-3 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30";
+        statusMsg.innerText = "ไม่สามารถเชื่อมต่อระบบได้: " + err;
+      });
+    });
+  </script>
+</body>
+</html>

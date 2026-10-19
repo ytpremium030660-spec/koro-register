@@ -65,7 +65,6 @@
           class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"></textarea>
       </div>
 
-
       <!-- ปุ่มส่ง -->
       <button type="submit" id="submitBtn" 
         class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition shadow-lg flex items-center justify-center gap-2">
@@ -77,14 +76,12 @@
     <div id="statusMsg" class="hidden mt-4 text-center text-sm p-3 rounded-xl"></div>
   </div>
 
-    <script>
-    // 🔴 วาง Web App URL ของคุณที่นี่ (ตรวจสอบว่าลงท้ายด้วย /exec)
+  <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxztE0lLapyMeHmbp8rG1bwGdnMFlpVk2MRqYRAcd7jrfMUDStG7dxU7r6kYVBkB4r6sQ/exec";
 
     let base64Image = "";
     let imageName = "";
 
-    // ฟังก์ชันย่อขนาดรูปภาพก่อนส่ง ป้องกันระบบค้างจากไฟล์รูปใหญ่เกินไป
     function previewImage(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -97,7 +94,7 @@
           const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
-          const max_size = 800; // บีบอัดขนาดไม่เกิน 800px
+          const max_size = 800;
 
           if (width > height && width > max_size) {
             height *= max_size / width;
@@ -111,7 +108,7 @@
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
-          base64Image = canvas.toDataURL('image/jpeg', 0.7); // กำหนดคุณภาพ 70%
+          base64Image = canvas.toDataURL('image/jpeg', 0.7);
 
           document.getElementById('imagePreview').src = base64Image;
           document.getElementById('imagePreview').classList.remove('hidden');
@@ -128,26 +125,24 @@
       const submitBtn = document.getElementById('submitBtn');
       const statusMsg = document.getElementById('statusMsg');
       
-      if (!GAS_URL || GAS_URL.includes("YOUR_DEPLOYMENT_ID")) {
-        alert("⚠️ กรุณาเปลี่ยน GAS_URL ในไฟล์ HTML ให้เป็น Web App URL จริงก่อนครับ");
-        return;
-      }
-
       submitBtn.disabled = true;
       submitBtn.innerHTML = `<span>⏳ กำลังบันทึกข้อมูล...</span>`;
       statusMsg.className = "hidden";
+
+      // 🟢 ปรับการดึงค่า customerName ให้ปลอดภัยขึ้น หากไม่มีช่องกรอกชื่อจะไม่เกิด Error
+      const customerElem = document.getElementById('customerName');
+      const customerVal = customerElem ? customerElem.value : "ลูกค้าทั่วไป";
 
       const payload = {
         action: "submitProductRequest",
         productName: document.getElementById('productName').value,
         category: document.getElementById('category').value,
         note: document.getElementById('note').value,
-        customerName: document.getElementById('customerName').value,
+        customerName: customerVal,
         imageBase64: base64Image,
         imageName: imageName
       };
 
-      // ตั้งเวลาตัดการรอถ้าเกิน 15 วินาที
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
@@ -171,7 +166,7 @@
           res = JSON.parse(text);
         } catch (pErr) {
           statusMsg.className = "mt-4 text-center text-xs p-3 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30";
-          statusMsg.innerText = "❌ คำตอบจาก Google ไม่ถูกต้อง (เช็คการตั้งค่า Who has access เป็น Anyone หรือยัง)";
+          statusMsg.innerText = "❌ ตอบกลับจาก Google ไม่ถูกต้อง";
           return;
         }
 

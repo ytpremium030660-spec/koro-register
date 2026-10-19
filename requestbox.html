@@ -78,12 +78,13 @@
   </div>
 
     <script>
-    // 🔴 1. ใส่ Web App URL ของคุณที่ได้จาก Apps Script (ต้องลงท้ายด้วย /exec เท่านั้น)
+    // 🔴 วาง Web App URL ของคุณที่นี่ (ตรวจสอบว่าลงท้ายด้วย /exec)
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxztE0lLapyMeHmbp8rG1bwGdnMFlpVk2MRqYRAcd7jrfMUDStG7dxU7r6kYVBkB4r6sQ/exec";
 
     let base64Image = "";
     let imageName = "";
 
+    // ฟังก์ชันย่อขนาดรูปภาพก่อนส่ง ป้องกันระบบค้างจากไฟล์รูปใหญ่เกินไป
     function previewImage(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -91,10 +92,32 @@
       imageName = file.name;
       const reader = new FileReader();
       reader.onload = function(e) {
-        base64Image = e.target.result;
-        document.getElementById('imagePreview').src = base64Image;
-        document.getElementById('imagePreview').classList.remove('hidden');
-        document.getElementById('uploadPlaceholder').classList.add('hidden');
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const max_size = 800; // บีบอัดขนาดไม่เกิน 800px
+
+          if (width > height && width > max_size) {
+            height *= max_size / width;
+            width = max_size;
+          } else if (height > max_size) {
+            width *= max_size / height;
+            height = max_size;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          base64Image = canvas.toDataURL('image/jpeg', 0.7); // กำหนดคุณภาพ 70%
+
+          document.getElementById('imagePreview').src = base64Image;
+          document.getElementById('imagePreview').classList.remove('hidden');
+          document.getElementById('uploadPlaceholder').classList.add('hidden');
+        };
+        img.src = e.target.result;
       };
       reader.readAsDataURL(file);
     }
@@ -105,7 +128,6 @@
       const submitBtn = document.getElementById('submitBtn');
       const statusMsg = document.getElementById('statusMsg');
       
-      // ตรวจสอบว่าใส่ GAS_URL หรือยัง
       if (!GAS_URL || GAS_URL.includes("YOUR_DEPLOYMENT_ID")) {
         alert("⚠️ กรุณาเปลี่ยน GAS_URL ในไฟล์ HTML ให้เป็น Web App URL จริงก่อนครับ");
         return;
@@ -125,15 +147,20 @@
         imageName: imageName
       };
 
-      // ส่งข้อมูลด้วย fetch
+      // ตั้งเวลาตัดการรอถ้าเกิน 15 วินาที
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
       fetch(GAS_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "text/plain;charset=utf-8"
-        },
-        body: JSON.stringify(payload)
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload),
+        signal: controller.signal
       })
-      .then(res => res.text()) // อ่านค่าเป็น Text ก่อนเพื่อป้องกันพังเมื่อมี Error จาก Google
+      .then(res => {
+        clearTimeout(timeoutId);
+        return res.text();
+      })
       .then(text => {
         submitBtn.disabled = false;
         submitBtn.innerHTML = `<span>🚀 ส่งรีเควสสินค้า</span>`;
@@ -143,9 +170,8 @@
         try {
           res = JSON.parse(text);
         } catch (pErr) {
-          console.error("Response not JSON:", text);
           statusMsg.className = "mt-4 text-center text-xs p-3 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30";
-          statusMsg.innerText = "❌ เกิดข้อผิดพลาดจาก Apps Script (ยังไม่ได้ Deploy เป็น New Version หรือติดสิทธิ์ Drive)";
+          statusMsg.innerText = "❌ คำตอบจาก Google ไม่ถูกต้อง (เช็คการตั้งค่า Who has access เป็น Anyone หรือยัง)";
           return;
         }
 
@@ -163,12 +189,17 @@
         }
       })
       .catch(err => {
-        console.error("Fetch Error:", err);
+        clearTimeout(timeoutId);
         submitBtn.disabled = false;
         submitBtn.innerHTML = `<span>🚀 ส่งรีเควสสินค้า</span>`;
         statusMsg.classList.remove("hidden");
         statusMsg.className = "mt-4 text-center text-xs p-3 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30";
-        statusMsg.innerText = "ไม่สามารถเชื่อมต่อระบบได้: " + err;
+        
+        if (err.name === 'AbortError') {
+          statusMsg.innerText = "⚠️ การเชื่อมต่อหมดเวลา (Timeout) กรุณาลองใหม่อีกครั้ง";
+        } else {
+          statusMsg.innerText = "❌ ไม่สามารถเชื่อมต่อได้: " + err.message;
+        }
       });
     });
   </script>

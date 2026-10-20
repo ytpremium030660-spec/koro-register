@@ -84,10 +84,18 @@
           result.data.forEach(item => {
             const oldPriceHTML = item.oldPrice ? `<span class="text-gray-400 text-xs line-through ml-2">${item.oldPrice}</span>` : '';
             
+            // 🟢 เช็คว่าค่าใน icon เป็นลิงก์รูปภาพ (http/https) หรือเป็นชื่อไอคอน FontAwesome
+            const iconOrImage = item.imageUrl || item.icon || 'tags';
+            const isImageUrl = iconOrImage.startsWith('http://') || iconOrImage.startsWith('https://');
+            
+            const mediaHTML = isImageUrl 
+              ? `<img src="${iconOrImage}" class="w-full h-full object-cover rounded-xl" alt="โปรโมชั่น">`
+              : `<i class="fa-solid fa-${iconOrImage}"></i>`;
+
             const html = `
               <div class="bg-white border border-pink-100 rounded-2xl p-3.5 flex items-center gap-3.5 shadow-sm hover:border-pink-300 transition">
-                <div class="w-14 h-14 bg-pink-50 rounded-xl border border-pink-100 flex items-center justify-center text-pink-500 text-2xl flex-shrink-0">
-                  <i class="fa-solid fa-${item.icon}"></i>
+                <div class="w-14 h-14 bg-pink-50 rounded-xl border border-pink-100 flex items-center justify-center text-pink-500 text-2xl flex-shrink-0 overflow-hidden">
+                  ${mediaHTML}
                 </div>
                 <div class="flex-1 min-w-0">
                   <span class="bg-pink-100 text-pink-600 text-[9px] font-bold px-2 py-0.5 rounded-full">${item.badge}</span>

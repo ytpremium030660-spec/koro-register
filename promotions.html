@@ -48,7 +48,7 @@
     </div>
 
     <!-- Area แสดงโปรโมชั่นจาก Google Sheet -->
-    <div id="promo-list" class="space-y-3.5 max-h-[380px] overflow-y-auto pr-1 text-left">
+    <div id="promo-list" class="space-y-4 max-h-[420px] overflow-y-auto pr-1 text-left">
       <div class="text-center py-8 text-gray-400 text-sm">
         <i class="fa-solid fa-spinner fa-spin text-pink-500 text-2xl mb-2"></i><br>กำลังโหลดโปรโมชั่นล่าสุด...
       </div>
@@ -84,25 +84,28 @@
           result.data.forEach(item => {
             const oldPriceHTML = item.oldPrice ? `<span class="text-gray-400 text-xs line-through ml-2">${item.oldPrice}</span>` : '';
             
-            // 🟢 เช็คว่าค่าใน icon เป็นลิงก์รูปภาพ (http/https) หรือเป็นชื่อไอคอน FontAwesome
+            // เช็คว่าค่าใน icon เป็นลิงก์รูปภาพ (http/https) หรือเป็นชื่อไอคอน FontAwesome
             const iconOrImage = item.imageUrl || item.icon || 'tags';
             const isImageUrl = iconOrImage.startsWith('http://') || iconOrImage.startsWith('https://');
             
             const mediaHTML = isImageUrl 
-              ? `<img src="${iconOrImage}" class="w-full h-full object-cover rounded-xl" alt="โปรโมชั่น">`
-              : `<i class="fa-solid fa-${iconOrImage}"></i>`;
+              ? `<img src="${iconOrImage}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt="โปรโมชั่น">`
+              : `<i class="fa-solid fa-${iconOrImage} text-4xl"></i>`;
 
             const html = `
-              <div class="bg-white border border-pink-100 rounded-2xl p-3.5 flex items-center gap-3.5 shadow-sm hover:border-pink-300 transition">
-                <div class="w-14 h-14 bg-pink-50 rounded-xl border border-pink-100 flex items-center justify-center text-pink-500 text-2xl flex-shrink-0 overflow-hidden">
+              <div class="group bg-white border border-pink-100 rounded-2xl p-3 flex items-center gap-4 shadow-sm hover:border-pink-300 hover:shadow-md transition">
+                <!-- กล่องรูปภาพขนาดใหญ่ (w-28 h-28 = 112px x 112px) -->
+                <div class="w-28 h-28 bg-pink-50 rounded-xl border border-pink-100 flex items-center justify-center text-pink-500 flex-shrink-0 overflow-hidden relative">
                   ${mediaHTML}
                 </div>
-                <div class="flex-1 min-w-0">
-                  <span class="bg-pink-100 text-pink-600 text-[9px] font-bold px-2 py-0.5 rounded-full">${item.badge}</span>
-                  <h4 class="font-bold text-gray-800 text-sm truncate mt-1">${item.title}</h4>
-                  <p class="text-xs text-gray-400 truncate">${item.detail}</p>
-                  <div class="mt-1 flex items-baseline">
-                    <span class="text-rose-600 font-extrabold text-sm">${item.price}</span>
+                
+                <!-- ข้อมูลรายละเอียด -->
+                <div class="flex-1 min-w-0 py-1">
+                  <span class="bg-pink-100 text-pink-600 text-[10px] font-bold px-2.5 py-0.5 rounded-full inline-block mb-1">${item.badge}</span>
+                  <h4 class="font-bold text-gray-800 text-base leading-snug line-clamp-2">${item.title}</h4>
+                  <p class="text-xs text-gray-500 line-clamp-2 mt-1 leading-relaxed">${item.detail}</p>
+                  <div class="mt-2 flex items-baseline">
+                    <span class="text-rose-600 font-extrabold text-base">${item.price}</span>
                     ${oldPriceHTML}
                   </div>
                 </div>

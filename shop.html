@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KORO STORE – สั่งซื้อออนไลน์</title>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+:root{--bg:#f6f4fb;--card:#fff;--ink:#26223a;--mut:#7b7794;--pink:#e8467c;--mint:#2bb5a0;--line:#e6e2f2}
+*{box-sizing:border-box}body{margin:0;font-family:'Kanit',sans-serif;background:var(--bg);color:var(--ink)}
+button{font-family:inherit;cursor:pointer}
+header{position:sticky;top:0;z-index:5;background:var(--ink);color:#fff;display:flex;gap:10px;align-items:center;padding:10px 14px}
+header h1{font-size:18px;margin:0;font-weight:600;white-space:nowrap}
+header input{flex:1;min-width:0;border:0;border-radius:10px;padding:9px 12px;font:inherit}
+.cartbtn{background:var(--pink);color:#fff;border:0;border-radius:10px;padding:9px 14px;font-weight:500}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:12px 14px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 14px;white-space:nowrap}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;padding:0 14px 90px;max-width:1100px;margin:auto}
+.p{background:var(--card);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.p .im{aspect-ratio:1;background:#ece8f7 center/cover;display:flex;align-items:center;justify-content:center;font-size:40px}
+.p .b{padding:10px;display:flex;flex-direction:column;gap:4px;flex:1}
+.p .n{font-size:14px;line-height:1.3}.p .pr{font-weight:600;color:var(--pink);font-size:17px}
+.p .st{font-size:11px;color:var(--mut)}
+.add{margin-top:auto;border:0;background:var(--mint);color:#fff;border-radius:9px;padding:8px;font-weight:500}
+.add:disabled{background:#ccc}
+.ov{position:fixed;inset:0;background:#0006;display:none;z-index:9}.ov.on{display:block}
+.sheet{position:absolute;right:0;top:0;bottom:0;width:min(440px,100%);background:#fff;display:flex;flex-direction:column}
+.sh{padding:14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;font-weight:600}
+.sb{flex:1;overflow-y:auto;padding:14px}.sf{padding:14px;border-top:1px solid var(--line)}
+.row{display:flex;justify-content:space-between;gap:8px;align-items:center;margin:8px 0;font-size:14px}
+.q button{width:26px;height:26px;border:1px solid var(--line);background:#fff;border-radius:7px}
+.q span{display:inline-block;min-width:24px;text-align:center}
+.tot{font-size:18px;font-weight:600}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 3px}
+input.f,textarea.f{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px;font:inherit}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:10px}
+.seg button.on{border-color:var(--pink);background:#fff0f5;color:var(--pink);font-weight:500}
+.go{width:100%;border:0;background:var(--pink);color:#fff;border-radius:11px;padding:13px;font-size:16px;font-weight:500;margin-top:10px}
+.box{background:#f6f4fb;border-radius:10px;padding:12px;font-size:14px;line-height:1.7;margin:10px 0}
+.ok{color:var(--mint);font-weight:600}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;display:none;z-index:20}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎀 KORO STORE</h1>
+  <input id="q" placeholder="ค้นหาสินค้า" oninput="render()">
+  <button class="cartbtn" onclick="openCart()">🛒 <span id="cc">0</span></button>
+</header>
+<div class="chips" id="chips"></div>
+<div class="grid" id="grid"><div style="grid-column:1/-1;text-align:center;color:var(--mut);padding:40px">กำลังโหลดสินค้า...</div></div>
+
+<div class="ov" id="ov" onclick="if(event.target===this)closeCart()">
+  <div class="sheet">
+    <div class="sh"><span id="stitle">ตะกร้าสินค้า</span><button onclick="closeCart()" style="border:0;background:none;font-size:20px">✕</button></div>
+    <div class="sb" id="sb"></div>
+    <div class="sf" id="sf"></div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+/* ===== ตั้งค่า ===== */
+const GAS_URL = "ใส่ URL Web App ของ Apps Script ที่นี่";
+const LIFF_ID = "";                       // ใส่ LIFF ID สำหรับล็อกอิน LINE (ว่างไว้ = กรอกชื่อ/เบอร์เอง)
+const PAY_INFO = "ธนาคาร ____ เลขบัญชี ____ ชื่อ ____ (หรือ PromptPay ____)";
+const SHIP_TABLE = [[100,32],[250,38],[500,50],[1000,65],[2000,90]]; // [น้ำหนักสูงสุด(กรัม), ค่าส่ง] ตัวอย่าง ให้แก้ตามเรตจริง และต้องตรงกับใน Apps Script
+const PACK_G = 30;                        // น้ำหนักบรรจุภัณฑ์ (กรัม)
+/* ================== */
+
+let products=[], cat='all', cart=JSON.parse(localStorage.getItem('koro_cart')||'{}'), user={name:'',phone:'',lineUserId:''}, method='pickup', lastOrder=null;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=n=>Number(n).toLocaleString('th-TH',{maximumFractionDigits:2});
+function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';setTimeout(()=>e.style.display='none',2000)}
+
+async function init(){
+  try{user=JSON.parse(localStorage.getItem('koro_user')||'null')||user}catch(e){}
+  if(LIFF_ID&&window.liff){
+    try{await liff.init({liffId:LIFF_ID});
+      if(!liff.isLoggedIn()){liff.login();return}
+      const p=await liff.getProfile();user.lineUserId=p.userId;user.name=user.name||p.displayName;
+    }catch(e){console.warn(e)}
+  }
+  try{const r=await fetch(GAS_URL+'?action=products');products=(await r.json()).products||[]}
+  catch(e){$('grid').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px">โหลดสินค้าไม่สำเร็จ กรุณาลองใหม่</div>'}
+  renderChips();render();count();
+}
+function renderChips(){
+  const cs=['all',...new Set(products.map(p=>p.category).filter(Boolean))];
+  $('chips').innerHTML=cs.map(c=>`<button class="chip ${c===cat?'on':''}" onclick="cat='${esc(c)}';renderChips();render()">${c==='all'?'ทั้งหมด':esc(c)}</button>`).join('');
+}
+function render(){
+  const q=$('q').value.trim().toLowerCase();
+  const list=products.filter(p=>(cat==='all'||p.category===cat)&&(!q||String(p.name).toLowerCase().includes(q)));
+  $('grid').innerHTML=list.length?list.map(p=>`<div class="p"><div class="im" ${p.image?`style="background-image:url('${esc(p.image)}')"`:''}>${p.image?'':'🎁'}</div>
+    <div class="b"><div class="n">${esc(p.name)}</div><div class="pr">${fmt(p.price)} ฿</div><div class="st">เหลือ ${p.available} ชิ้น</div>
+    <button class="add" ${p.available<=(cart[p.id]||0)?'disabled':''} onclick="add('${esc(p.id)}')">${p.available<=(cart[p.id]||0)?'หมดแล้ว':'ใส่ตะกร้า'}</button></div></div>`).join(''):'<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--mut)">ไม่พบสินค้า</div>';
+}
+function save(){localStorage.setItem('koro_cart',JSON.stringify(cart));count()}
+function count(){$('cc').textContent=Object.values(cart).reduce((a,b)=>a+b,0)}
+function add(id){cart[id]=(cart[id]||0)+1;save();render();toast('เพิ่มลงตะกร้าแล้ว')}
+function chg(id,d){const p=products.find(x=>String(x.id)===id);const n=(cart[id]||0)+d;
+  if(n<=0)delete cart[id];else if(p&&n>p.available){toast('สินค้าไม่พอ');return}else cart[id]=n;save();render();cartView()}
+function lines(){return Object.entries(cart).map(([id,q])=>({p:products.find(x=>String(x.id)===id),q})).filter(l=>l.p)}
+function sub(){return lines().reduce((a,l)=>a+l.p.price*l.q,0)}
+function grams(){return lines().reduce((a,l)=>a+(l.p.weight||50)*l.q,0)+PACK_G}
+function ship(){if(method==='pickup')return 0;const g=grams();for(const [m,f] of SHIP_TABLE)if(g<=m)return f;return SHIP_TABLE[SHIP_TABLE.length-1][1]}
+function openCart(){$('ov').classList.add('on');cartView()}
+function closeCart(){$('ov').classList.remove('on')}
+
+function cartView(){
+  $('stitle').textContent='ตะกร้าสินค้า';
+  const L=lines();
+  if(!L.length){$('sb').innerHTML='<div style="text-align:center;color:var(--mut);padding:40px">ยังไม่มีสินค้าในตะกร้า</div>';$('sf').innerHTML='';return}
+  $('sb').innerHTML=L.map(l=>`<div class="row"><div style="flex:1">${esc(l.p.name)}<div style="color:var(--pink)">${fmt(l.p.price)} ฿</div></div>
+    <div class="q"><button onclick="chg('${esc(l.p.id)}',-1)">−</button><span>${l.q}</span><button onclick="chg('${esc(l.p.id)}',1)">+</button></div></div>`).join('');
+  $('sf').innerHTML=`<div class="row"><span>ยอดสินค้า</span><b>${fmt(sub())} ฿</b></div><button class="go" onclick="checkoutView()">ไปชำระเงิน</button>`;
+}
+function checkoutView(){
+  $('stitle').textContent='ข้อมูลการสั่งซื้อ';
+  $('sb').innerHTML=`<label>ชื่อผู้สั่ง *</label><input class="f" id="cn" value="${esc(user.name)}">
+    <label>เบอร์โทร *</label><input class="f" id="cp" inputmode="tel" value="${esc(user.phone)}">
+    <label>รับสินค้า</label><div class="seg"><button id="m1" class="${method==='pickup'?'on':''}" onclick="setM('pickup')">รับที่ร้าน</button><button id="m2" class="${method==='ship'?'on':''}" onclick="setM('ship')">ส่งพัสดุ</button></div>
+    <div id="ad" style="display:${method==='ship'?'block':'none'}"><label>ที่อยู่จัดส่ง *</label><textarea class="f" id="ca" rows="3">${esc(user.address||'')}</textarea></div>`;
+  sumView();
+}
+function setM(m){method=m;$('m1').className=m==='pickup'?'on':'';$('m2').className=m==='ship'?'on':'';$('ad').style.display=m==='ship'?'block':'none';sumView()}
+function sumView(){
+  $('sf').innerHTML=`<div class="row"><span>ยอดสินค้า</span><span>${fmt(sub())} ฿</span></div>
+   <div class="row"><span>ค่าส่ง ${method==='ship'?`(น้ำหนักรวม ${grams()} ก.)`:'(รับที่ร้าน)'}</span><span>${fmt(ship())} ฿</span></div>
+   <div class="row tot"><span>ยอดที่ต้องโอน</span><span>${fmt(sub()+ship())} ฿</span></div>
+   <button class="go" id="gb" onclick="placeOrder()">ยืนยันสั่งซื้อ</button>`;
+}
+async function placeOrder(){
+  const name=$('cn').value.trim(),phone=$('cp').value.trim(),address=($('ca')?.value||'').trim();
+  if(!name||phone.length<9){toast('กรอกชื่อและเบอร์โทรให้ครบ');return}
+  if(method==='ship'&&!address){toast('กรอกที่อยู่จัดส่ง');return}
+  user={...user,name,phone,address};localStorage.setItem('koro_user',JSON.stringify(user));
+  $('gb').disabled=true;$('gb').textContent='กำลังสร้างออเดอร์...';
+  try{
+    const r=await post({action:'createOrder',name,phone,address,method,lineUserId:user.lineUserId,items:Object.entries(cart).map(([id,qty])=>({id,qty}))});
+    if(r.status!=='success')throw new Error(r.message||'สร้างออเดอร์ไม่สำเร็จ');
+    lastOrder=r;cart={};save();payView();
+  }catch(e){toast(e.message);$('gb').disabled=false;$('gb').textContent='ยืนยันสั่งซื้อ'}
+}
+function payView(){
+  $('stitle').textContent='ชำระเงิน';
+  $('sb').innerHTML=`<div class="box"><div class="ok">✅ สร้างออเดอร์แล้ว</div>เลขออเดอร์: <b>${esc(lastOrder.orderId)}</b><br>ยอดที่ต้องโอน: <b>${fmt(lastOrder.total)} ฿</b> (สินค้า ${fmt(lastOrder.subtotal)} + ส่ง ${fmt(lastOrder.shipFee)})<br>${esc(PAY_INFO)}</div>
+   <label>แนบสลิปการโอน *</label><input type="file" id="slip" accept="image/*" class="f">
+   <div style="font-size:12px;color:var(--mut);margin-top:8px">โอนภายใน 24 ชั่วโมง หากไม่ชำระ ระบบจะยกเลิกออเดอร์และคืนสินค้า</div>`;
+  $('sf').innerHTML=`<button class="go" id="sb2" onclick="sendSlip()">ส่งสลิป</button>`;
+}
+function compress(file,maxW=1000,q=.7){return new Promise(res=>{const r=new FileReader();r.onload=e=>{const i=new Image();i.onload=()=>{const s=Math.min(1,maxW/i.width),c=document.createElement('canvas');c.width=i.width*s;c.height=i.height*s;c.getContext('2d').drawImage(i,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',q))};i.src=e.target.result};r.readAsDataURL(file)})}
+async function sendSlip(){
+  const f=$('slip').files[0];if(!f){toast('เลือกรูปสลิปก่อน');return}
+  $('sb2').disabled=true;$('sb2').textContent='กำลังส่ง...';
+  try{
+    const r=await post({action:'uploadSlip',orderId:lastOrder.orderId,phone:user.phone,slip:await compress(f)});
+    if(r.status!=='success')throw new Error(r.message||'ส่งสลิปไม่สำเร็จ');
+    $('sb').innerHTML=`<div class="box" style="text-align:center"><div class="ok" style="font-size:18px">ส่งสลิปแล้ว</div>ร้านจะตรวจสอบและแจ้งสถานะทาง LINE<br>เลขออเดอร์ ${esc(lastOrder.orderId)}<br>${method==='pickup'?'เมื่อพร้อมแล้วมารับที่ร้านได้เลย':'เมื่อจัดส่งแล้วจะแจ้งเลขพัสดุ'}</div>`;
+    $('sf').innerHTML=`<button class="go" onclick="closeCart();init()">กลับหน้าร้าน</button>`;
+  }catch(e){toast(e.message);$('sb2').disabled=false;$('sb2').textContent='ส่งสลิป'}
+}
+async function post(obj){const fd=new FormData();fd.append('payload',JSON.stringify(obj));return (await fetch(GAS_URL,{method:'POST',body:fd})).json()}
+init();
+</script>
+</body>
+</html>

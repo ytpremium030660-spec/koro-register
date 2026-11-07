@@ -48,6 +48,7 @@ input.f,textarea.f{width:100%;border:1px solid var(--line);border-radius:9px;pad
 <header>
   <h1>🎀 KORO STORE</h1>
   <input id="q" placeholder="ค้นหาสินค้า" oninput="render()">
+  <button class="cartbtn" style="background:var(--mint)" onclick="openTrack()">📦 ติดตาม</button>
   <button class="cartbtn" onclick="openCart()">🛒 <span id="cc">0</span></button>
 </header>
 <div class="chips" id="chips"></div>
@@ -71,7 +72,7 @@ const SHIP_TABLE = [[100,32],[250,38],[500,50],[1000,65],[2000,90]]; // [น้�
 const PACK_G = 30;                        // น้ำหนักบรรจุภัณฑ์ (กรัม)
 /* ================== */
 
-let products=[], cat='all', cart=JSON.parse(localStorage.getItem('koro_cart')||'{}'), user={name:'',phone:'',lineUserId:''}, method='pickup', lastOrder=null;
+let products=[],let payMethod='qr', trackTimer=null; cat='all', cart=JSON.parse(localStorage.getItem('koro_cart')||'{}'), user={name:'',phone:'',lineUserId:''}, method='pickup', lastOrder=null;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=n=>Number(n).toLocaleString('th-TH',{maximumFractionDigits:2});
@@ -110,7 +111,7 @@ function sub(){return lines().reduce((a,l)=>a+l.p.price*l.q,0)}
 function grams(){return lines().reduce((a,l)=>a+(l.p.weight||50)*l.q,0)+PACK_G}
 function ship(){if(method==='pickup')return 0;const g=grams();for(const [m,f] of SHIP_TABLE)if(g<=m)return f;return SHIP_TABLE[SHIP_TABLE.length-1][1]}
 function openCart(){$('ov').classList.add('on');cartView()}
-function closeCart(){$('ov').classList.remove('on')}
+function closeCart(){$('ov').classList.remove('on');clearInterval(trackTimer)}
 
 function cartView(){
   $('stitle').textContent='ตะกร้าสินค้า';
@@ -120,21 +121,44 @@ function cartView(){
     <div class="q"><button onclick="chg('${esc(l.p.id)}',-1)">−</button><span>${l.q}</span><button onclick="chg('${esc(l.p.id)}',1)">+</button></div></div>`).join('');
   $('sf').innerHTML=`<div class="row"><span>ยอดสินค้า</span><b>${fmt(sub())} ฿</b></div><button class="go" onclick="checkoutView()">ไปชำระเงิน</button>`;
 }
+  
+function paySegHtml(){
+  return `<button class="${payMethod==='store'?'on':''}" ${method==='ship'?'disabled style="opacity:.4"':''} onclick="setP('store')">🏬 ชำระที่ร้าน</button>
+          <button class="${payMethod==='qr'?'on':''}" onclick="setP('qr')">📱 สแกนจ่าย</button>`;
+}
+function setP(p){
+  if(p==='store'&&method==='ship'){toast('ส่งพัสดุต้องสแกนจ่าย');return}
+  payMethod=p;$('pseg').innerHTML=paySegHtml();sumView();
+}
+
 function checkoutView(){
   $('stitle').textContent='ข้อมูลการสั่งซื้อ';
   $('sb').innerHTML=`<label>ชื่อผู้สั่ง *</label><input class="f" id="cn" value="${esc(user.name)}">
     <label>เบอร์โทร *</label><input class="f" id="cp" inputmode="tel" value="${esc(user.phone)}">
     <label>รับสินค้า</label><div class="seg"><button id="m1" class="${method==='pickup'?'on':''}" onclick="setM('pickup')">รับที่ร้าน</button><button id="m2" class="${method==='ship'?'on':''}" onclick="setM('ship')">ส่งพัสดุ</button></div>
-    <div id="ad" style="display:${method==='ship'?'block':'none'}"><label>ที่อยู่จัดส่ง *</label><textarea class="f" id="ca" rows="3">${esc(user.address||'')}</textarea></div>`;
+    <div id="ad" style="display:${method==='ship'?'block':'none'}"><label>ที่อยู่จัดส่ง *</label><textarea class="f" id="ca" rows="3">${esc(user.address||'')}</textarea></div>
+    <label>วิธีชำระเงิน</label><div class="seg" id="pseg">${paySegHtml()}</div>`;
   sumView();
 }
-function setM(m){method=m;$('m1').className=m==='pickup'?'on':'';$('m2').className=m==='ship'?'on':'';$('ad').style.display=m==='ship'?'block':'none';sumView()}
+function setM(m){
+  method=m;if(m==='ship')payMethod='qr';
+  $('m1').className=m==='pickup'?'on':'';$('m2').className=m==='ship'?'on':'';
+  $('ad').style.display=m==='ship'?'block':'none';
+  $('pseg').innerHTML=paySegHtml();sumView();
+}
 function sumView(){
   $('sf').innerHTML=`<div class="row"><span>ยอดสินค้า</span><span>${fmt(sub())} ฿</span></div>
    <div class="row"><span>ค่าส่ง ${method==='ship'?`(น้ำหนักรวม ${grams()} ก.)`:'(รับที่ร้าน)'}</span><span>${fmt(ship())} ฿</span></div>
-   <div class="row tot"><span>ยอดที่ต้องโอน</span><span>${fmt(sub()+ship())} ฿</span></div>
+   <div class="row tot"><span>${payMethod==='store'?'ยอดที่ชำระที่ร้าน':'ยอดที่ต้องโอน'}</span><span>${fmt(sub()+ship())} ฿</span></div>
    <button class="go" id="gb" onclick="placeOrder()">ยืนยันสั่งซื้อ</button>`;
 }
+
+function myOrderIds(){try{return JSON.parse(localStorage.getItem('koro_orders')||'[]')}catch(e){return[]}}
+function saveMyOrder(id,phone){
+  const a=myOrderIds().filter(x=>x.id!==id);a.unshift({id,phone});
+  localStorage.setItem('koro_orders',JSON.stringify(a.slice(0,20)));
+}
+
 async function placeOrder(){
   const name=$('cn').value.trim(),phone=$('cp').value.trim(),address=($('ca')?.value||'').trim();
   if(!name||phone.length<9){toast('กรอกชื่อและเบอร์โทรให้ครบ');return}
@@ -142,14 +166,27 @@ async function placeOrder(){
   user={...user,name,phone,address};localStorage.setItem('koro_user',JSON.stringify(user));
   $('gb').disabled=true;$('gb').textContent='กำลังสร้างออเดอร์...';
   try{
-    const r=await post({action:'createOrder',name,phone,address,method,lineUserId:user.lineUserId,items:Object.entries(cart).map(([id,qty])=>({id,qty}))});
+    const r=await post({action:'createOrder',name,phone,address,method,payMethod,lineUserId:user.lineUserId,items:Object.entries(cart).map(([id,qty])=>({id,qty}))});
     if(r.status!=='success')throw new Error(r.message||'สร้างออเดอร์ไม่สำเร็จ');
-    lastOrder=r;cart={};save();payView();
+    lastOrder=r;saveMyOrder(r.orderId,phone);cart={};save();payView();
   }catch(e){toast(e.message);$('gb').disabled=false;$('gb').textContent='ยืนยันสั่งซื้อ'}
 }
+
 function payView(){
-  $('stitle').textContent='ชำระเงิน';
-  $('sb').innerHTML=`<div class="box"><div class="ok">✅ สร้างออเดอร์แล้ว</div>เลขออเดอร์: <b>${esc(lastOrder.orderId)}</b><br>ยอดที่ต้องโอน: <b>${fmt(lastOrder.total)} ฿</b> (สินค้า ${fmt(lastOrder.subtotal)} + ส่ง ${fmt(lastOrder.shipFee)})<br>${esc(PAY_INFO)}</div>
+  $('stitle').textContent=lastOrder.payMethod==='store'?'สั่งซื้อสำเร็จ':'ชำระเงิน';
+  if(lastOrder.payMethod==='store'){
+    $('sb').innerHTML=`<div class="box" style="text-align:center"><div class="ok" style="font-size:18px">✅ สร้างออเดอร์แล้ว</div>
+      เลขออเดอร์: <b>${esc(lastOrder.orderId)}</b><br>ยอดที่ต้องชำระ: <b>${fmt(lastOrder.total)} ฿</b><br>
+      ร้านเก็บสินค้าไว้ให้แล้ว ชำระเงินตอนมารับที่ร้านได้เลย<br>เมื่อสินค้าพร้อม ร้านจะแจ้งทาง LINE และดูสถานะได้ที่ปุ่ม 📦 ติดตาม</div>
+      <div style="font-size:12px;color:var(--mut)">หากไม่มารับภายใน 24 ชั่วโมง ระบบจะยกเลิกออเดอร์</div>`;
+    $('sf').innerHTML=`<button class="go" onclick="closeCart();init()">กลับหน้าร้าน</button>`;
+    return;
+  }
+  const qrUrl='https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=8&data='+encodeURIComponent(lastOrder.qrPayload||'');
+  $('sb').innerHTML=`<div class="box"><div class="ok">✅ สร้างออเดอร์แล้ว</div>เลขออเดอร์: <b>${esc(lastOrder.orderId)}</b><br>ยอดที่ต้องโอน: <b>${fmt(lastOrder.total)} ฿</b> (สินค้า ${fmt(lastOrder.subtotal)} + ส่ง ${fmt(lastOrder.shipFee)})</div>
+   <div style="text-align:center"><div style="font-weight:600;margin-bottom:6px">สแกนจ่ายผ่าน KSHOP</div>
+   ${lastOrder.qrPayload?`<img src="${qrUrl}" alt="QR" style="width:260px;max-width:100%;border:1px solid var(--line);border-radius:12px">`:'<div class="box">ไม่พบ QR กรุณาติดต่อร้าน</div>'}
+   <div style="font-size:13px;color:var(--mut);margin-top:6px">${esc(PAY_INFO)}</div></div>
    <label>แนบสลิปการโอน *</label><input type="file" id="slip" accept="image/*" class="f">
    <div style="font-size:12px;color:var(--mut);margin-top:8px">โอนภายใน 24 ชั่วโมง หากไม่ชำระ ระบบจะยกเลิกออเดอร์และคืนสินค้า</div>`;
   $('sf').innerHTML=`<button class="go" id="sb2" onclick="sendSlip()">ส่งสลิป</button>`;

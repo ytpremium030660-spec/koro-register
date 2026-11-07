@@ -65,14 +65,14 @@ input.f,textarea.f{width:100%;border:1px solid var(--line);border-radius:9px;pad
 
 <script>
 /* ===== ตั้งค่า ===== */
-const GAS_URL = "https://script.google.com/macros/s/AKfycbyUmaiMgJtKMJ8KMwZtarEoBCAL8xFyMJ3lno2F2Jh82H5oZWVWQu2peIDWHnQsKPd0fg/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzsl0o5Qci8UjdjK6kVzsgEv_nbJqn4Sca8AMPSjJ0RbrX4er8GqybxJBuxy_zTKCfMRA/exec";
 const LIFF_ID = "2011897462-ADgczTLn";                       // ใส่ LIFF ID สำหรับล็อกอิน LINE (ว่างไว้ = กรอกชื่อ/เบอร์เอง)
 const PAY_INFO = "KSHOP - KORO STORE - โคโระ สโตร์";
 const SHIP_TABLE = [[100,32],[250,38],[500,50],[1000,65],[2000,90]]; // [น้ำหนักสูงสุด(กรัม), ค่าส่ง] ตัวอย่าง ให้แก้ตามเรตจริง และต้องตรงกับใน Apps Script
 const PACK_G = 30;                        // น้ำหนักบรรจุภัณฑ์ (กรัม)
 /* ================== */
 
-let products=[],let payMethod='qr', trackTimer=null; cat='all', cart=JSON.parse(localStorage.getItem('koro_cart')||'{}'), user={name:'',phone:'',lineUserId:''}, method='pickup', lastOrder=null;
+let products=[], payMethod='qr', trackTimer=null, cat='all', cart=JSON.parse(localStorage.getItem('koro_cart')||'{}'), user={name:'',phone:'',lineUserId:''}, method='pickup', lastOrder=null;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=n=>Number(n).toLocaleString('th-TH',{maximumFractionDigits:2});

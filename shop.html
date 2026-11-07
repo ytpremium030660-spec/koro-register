@@ -203,6 +203,37 @@ async function sendSlip(){
   }catch(e){toast(e.message);$('sb2').disabled=false;$('sb2').textContent='ส่งสลิป'}
 }
 async function post(obj){const fd=new FormData();fd.append('payload',JSON.stringify(obj));return (await fetch(GAS_URL,{method:'POST',body:fd})).json()}
+  function openTrack(){
+  $('ov').classList.add('on');trackView();
+  clearInterval(trackTimer);
+  trackTimer=setInterval(()=>{if($('ov').classList.contains('on')&&$('stitle').textContent==='ติดตามออเดอร์')trackView(true)},30000);
+}
+async function trackView(silent){
+  $('stitle').textContent='ติดตามออเดอร์';$('sf').innerHTML='';
+  if(!silent)$('sb').innerHTML='<div style="text-align:center;color:var(--mut);padding:40px">กำลังโหลด...</div>';
+  let list=[];
+  try{
+    if(user.lineUserId){
+      const r=await (await fetch(GAS_URL+'?action=myOrders&lineUserId='+encodeURIComponent(user.lineUserId))).json();
+      list=r.orders||[];
+    }else{
+      const rs=await Promise.all(myOrderIds().map(o=>fetch(`${GAS_URL}?action=orderStatus&orderId=${encodeURIComponent(o.id)}&phone=${encodeURIComponent(o.phone)}`).then(r=>r.json())));
+      list=rs.filter(r=>r.status==='success').map(r=>r.order);
+    }
+  }catch(e){$('sb').innerHTML='<div style="text-align:center;padding:40px">โหลดไม่สำเร็จ ลองใหม่อีกครั้ง</div>';return}
+  if(!list.length){$('sb').innerHTML='<div style="text-align:center;color:var(--mut);padding:40px">ยังไม่มีออเดอร์</div>';return}
+  $('sb').innerHTML=list.map(o=>{
+    const ready=o.status==='แพ็คแล้ว'&&o.method!=='ship';
+    const hint=o.status==='รอชำระ'?(o.payMethod==='store'?'ชำระเงินที่ร้านตอนมารับ':'รอโอนเงินและแนบสลิป'):'';
+    return `<div class="box" style="${ready?'border:2px solid var(--mint)':''}">
+      <div style="display:flex;justify-content:space-between"><b>${esc(o.orderId)}</b><span>${fmt(o.total)} ฿</span></div>
+      <div class="${ready?'ok':''}" style="font-size:16px;margin:4px 0">${esc(o.statusText)}</div>
+      ${hint?`<div style="font-size:12px;color:var(--mut)">${hint}</div>`:''}
+      ${o.tracking?`<div>🔎 เลขพัสดุ: <b>${esc(o.tracking)}</b></div>`:''}
+      <div style="font-size:12px;color:var(--mut);margin-top:4px">${o.items.map(i=>esc(i.name)+' x'+i.qty).join(', ')}</div></div>`;
+  }).join('');
+  $('sf').innerHTML=`<div style="font-size:12px;color:var(--mut);text-align:center">รีเฟรชอัตโนมัติทุก 30 วินาที</div>`;
+}
 init();
 </script>
 </body>
